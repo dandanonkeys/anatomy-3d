@@ -1,0 +1,453 @@
+[
+ {
+  "muscle": "Trapezius",
+  "label": "Trapezius",
+  "alt": [],
+  "origin": "occipital bone, spinous processes of thoracic vertebrae (C7-T12)",
+  "insertion": "Acromion, spine of scapula, clavicle",
+  "innervation": "Accessory Nerve (CN XI)",
+  "action": "Stabilize, elevate, and, retract scapula"
+ },
+ {
+  "muscle": "Rhomboids",
+  "label": "Rhomboids: R. Major & R. Minor",
+  "alt": [
+   "Rhomboid major",
+   "Rhomboid minor"
+  ],
+  "origin": "Spinous processes of Thoracic vertebrae: Minor: C7-T1 Major: T2-T5",
+  "insertion": "Medial border of scapula",
+  "innervation": "",
+  "action": "Stabilize and retract scapula"
+ },
+ {
+  "muscle": "Pectoralis minor",
+  "label": "Pectoralis minor",
+  "alt": [],
+  "origin": "ribs (3-5)",
+  "insertion": "Coracoid process of scapula",
+  "innervation": "",
+  "action": "Scapular depression and protraction"
+ },
+ {
+  "muscle": "Serratus anterior",
+  "label": "Serratus anterior",
+  "alt": [],
+  "origin": "ribs (1-8)",
+  "insertion": "Medial border of scapula",
+  "innervation": "",
+  "action": "Scapular protraction"
+ },
+ {
+  "muscle": "Levator scapulae",
+  "label": "Levator scapulae",
+  "alt": [],
+  "origin": "Transverse processes of Cervical Vertebrae (C1-C4)",
+  "insertion": "Medial border of scapula (superior to spine)",
+  "innervation": "",
+  "action": "Scapular elevation"
+ },
+ {
+  "muscle": "Deltoid",
+  "label": "Deltoid",
+  "alt": [],
+  "origin": "Clavicle, acromion and spine of scapula",
+  "insertion": "Deltoid tuberosity of humerus",
+  "innervation": "Axillary Nerve (of Brachial Plexus)",
+  "action": "Shoulder ABDuction"
+ },
+ {
+  "muscle": "Latissimus dorsi",
+  "label": "Latissimus dorsi",
+  "alt": [],
+  "origin": "Spinous processes of Thoracic and Lumbar Vertebrae (T7-L5), iliac crest",
+  "insertion": "Intertubercular sulcus of humerus",
+  "innervation": "",
+  "action": "Shoulder Extension, ADDuction, and medial rotation"
+ },
+ {
+  "muscle": "Teres major",
+  "label": "Teres major",
+  "alt": [],
+  "origin": "Inferior angle of scapula",
+  "insertion": "lesser tubercle of humerus",
+  "innervation": "",
+  "action": "Shoulder Extension, ADDuction, and medial rotation"
+ },
+ {
+  "muscle": "Pectoralis major",
+  "label": "Pectoralis major",
+  "alt": [],
+  "origin": "Clavicle, sternum",
+  "insertion": "Greater tubercle of humerus",
+  "innervation": "",
+  "action": "Shoulder ADDuction, and medial rotation"
+ },
+ {
+  "muscle": "Supraspinatus",
+  "label": "Supraspinatus",
+  "alt": [],
+  "origin": "Supraspinous fossa of scapula",
+  "insertion": "Greater tubercle of humerus",
+  "innervation": "",
+  "action": "Shoulder ABDuction"
+ },
+ {
+  "muscle": "Infraspinatus",
+  "label": "Infraspinatus",
+  "alt": [],
+  "origin": "Infraspinous fossa of scapula",
+  "insertion": "Greater tubercle of humerus",
+  "innervation": "",
+  "action": "Lateral rotation of Shoulder"
+ },
+ {
+  "muscle": "Teres minor",
+  "label": "Teres minor",
+  "alt": [],
+  "origin": "Lateral border of scapula",
+  "insertion": "Greater tubercle of humerus",
+  "innervation": "",
+  "action": "Lateral rotation of Shoulder"
+ },
+ {
+  "muscle": "Subscapularis",
+  "label": "Subscapularis",
+  "alt": [],
+  "origin": "subscapular fossa of scapula",
+  "insertion": "lesser tubercle of humerus",
+  "innervation": "",
+  "action": "Medial rotation of Shoulder"
+ },
+ {
+  "muscle": "Coracobrachialis",
+  "label": "Coracobrachialis",
+  "alt": [],
+  "origin": "Coracoid process of scapula",
+  "insertion": "Shaft of Humerus",
+  "innervation": "Musculocutaneous Nerve (of Brachial Plexus)",
+  "action": "Shoulder flexion and ADDuction"
+ },
+ {
+  "muscle": "Brachialis",
+  "label": "Brachialis (deep to biceps)",
+  "alt": [],
+  "origin": "Distal Humerus",
+  "insertion": "Coronoid process of ulna",
+  "innervation": "Musculocutaneous Nerve (of Brachial Plexus)",
+  "action": "Elbow flexion"
+ },
+ {
+  "muscle": "Biceps brachii",
+  "label": "Biceps brachii (2 heads)",
+  "alt": [],
+  "origin": "Short head: coracoid process of scapula Long head: supraglenoid tubercle",
+  "insertion": "Common Insertion: radial tuberosity of radius",
+  "innervation": "Musculocutaneous Nerve (of Brachial Plexus)",
+  "action": "Elbow flexion and supination"
+ },
+ {
+  "muscle": "Triceps brachii",
+  "label": "Triceps brachii (3 heads)",
+  "alt": [],
+  "origin": "Long head: infraglenoid tubercle of scapula Lateral head: posterior shaft of humerus Medial head: distal shaft of humerus",
+  "insertion": "Common Insertion: olecranon of ulna",
+  "innervation": "Radial Nerve (of Brachial Plexus)",
+  "action": "Elbow extension"
+ },
+ {
+  "muscle": "Brachioradialis",
+  "label": "Brachioradialis",
+  "alt": [],
+  "origin": "distal end of humerus",
+  "insertion": "Radial styloid process",
+  "innervation": "Radial Nerve (of Brachial Plexus)",
+  "action": "Elbow Flexion (synergist)"
+ },
+ {
+  "muscle": "Pronator teres",
+  "label": "Pronator teres",
+  "alt": [],
+  "origin": "Medial epicondyle of humerus",
+  "insertion": "Midshaft of radius",
+  "innervation": "",
+  "action": "Forearm Pronation"
+ },
+ {
+  "muscle": "Supinator",
+  "label": "Supinator",
+  "alt": [],
+  "origin": "Lateral epicondyle of humerus",
+  "insertion": "Proximal shaft of radius",
+  "innervation": "",
+  "action": "Forearm Supination"
+ },
+ {
+  "muscle": "Flexors of the wrist and digits",
+  "label": "Flexors of the wrist and digits (anterior/ventral side of forearm)",
+  "alt": [],
+  "origin": "Common Origin: medial epicondyle of humerus",
+  "insertion": "",
+  "innervation": "Median Nerve (of Brachial Plexus)",
+  "action": "Wrist & Digit Flexion"
+ },
+ {
+  "muscle": "Extensors of the wrist and digits",
+  "label": "Extensors of the wrist and digits (posterior/dorsal side of forearm)",
+  "alt": [],
+  "origin": "Common Origin: lateral epicondyle of humerus",
+  "insertion": "",
+  "innervation": "Radial Nerve (of Brachial Plexus)",
+  "action": "Wrist and Digit Extension"
+ },
+ {
+  "muscle": "Internal intercostals",
+  "label": "Internal intercostals (deep)",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "depress ribs during (forced exhalation)"
+ },
+ {
+  "muscle": "External intercostals",
+  "label": "External intercostals (superficial)",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "elevate ribs during inspiration (quiet breathing)"
+ },
+ {
+  "muscle": "Diaphragm",
+  "label": "Diaphragm",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Flattens for Inspiration"
+ },
+ {
+  "muscle": "Rectus abdominis",
+  "label": "Rectus abdominis *note linea alba and tendinous intersections",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Flexion of Spinal Column"
+ },
+ {
+  "muscle": "External oblique",
+  "label": "External oblique",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Flexion of Spinal Column & Abdominal Compression"
+ },
+ {
+  "muscle": "Internal oblique",
+  "label": "Internal oblique",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Flexion of Spinal Column & Abdominal Compression"
+ },
+ {
+  "muscle": "Transversus abdominis",
+  "label": "Transversus abdominis",
+  "alt": [],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Abdominal Compression"
+ },
+ {
+  "muscle": "Erector spinae",
+  "label": "Erector spinae",
+  "alt": [],
+  "origin": "Vertebral column",
+  "insertion": "Vertebral column",
+  "innervation": "",
+  "action": "Extension of the Spinal column"
+ },
+ {
+  "muscle": "Iliopsoas",
+  "label": "Iliopsoas (formed by Psoas Major and Iliacus)",
+  "alt": [],
+  "origin": "Psoas Major: lumbar vertebrae Iliacus: iliac fossa and crest",
+  "insertion": "Common Insertion: Lesser trochanter femur",
+  "innervation": "Femoral Nerve",
+  "action": "Hip Flexion"
+ },
+ {
+  "muscle": "Sartorius",
+  "label": "Sartorius",
+  "alt": [],
+  "origin": "Anterior Superior Iliac Spine",
+  "insertion": "Medial Proximal Tibia",
+  "innervation": "Femoral Nerve",
+  "action": "Hip Flexion, Abduction and Lateral Rotation (cross legged position)"
+ },
+ {
+  "muscle": "Adductors",
+  "label": "Adductors (of thigh)",
+  "alt": [
+   "Adductor longus",
+   "Adductor brevis",
+   "Adductor magnus"
+  ],
+  "origin": "Anterior Os Coxae",
+  "insertion": "Posterior Femur (linea aspera)",
+  "innervation": "Obturator Nerve",
+  "action": "Hip ADDuction and Medial Rotation"
+ },
+ {
+  "muscle": "Tensor fasciae latae",
+  "label": "Tensor fascia lata & Iliotibial tract",
+  "alt": [
+   "Iliotibial tract"
+  ],
+  "origin": "iliac crest, anterior superior iliac spine",
+  "insertion": "iliotibial tract",
+  "innervation": "",
+  "action": "Stabilizes Lower Limb"
+ },
+ {
+  "muscle": "Rectus femoris",
+  "label": "Rectus femoris",
+  "alt": [],
+  "origin": "anterior inferior iliac spine",
+  "insertion": "Tibial Tuberosity",
+  "innervation": "Femoral Nerve",
+  "action": "Hip Flexion & Knee Extension"
+ },
+ {
+  "muscle": "Vastus lateralis",
+  "label": "Vastus lateralis",
+  "alt": [],
+  "origin": "",
+  "insertion": "Tibial Tuberosity",
+  "innervation": "Femoral Nerve",
+  "action": "Knee Extension"
+ },
+ {
+  "muscle": "Vastus medialis",
+  "label": "Vastus medialis",
+  "alt": [],
+  "origin": "",
+  "insertion": "Tibial Tuberosity",
+  "innervation": "Femoral Nerve",
+  "action": "Knee Extension"
+ },
+ {
+  "muscle": "Vastus intermedius",
+  "label": "Vastus intermedius",
+  "alt": [],
+  "origin": "",
+  "insertion": "Tibial Tuberosity",
+  "innervation": "Femoral Nerve",
+  "action": "Knee Extension"
+ },
+ {
+  "muscle": "Biceps femoris",
+  "label": "Biceps femoris (2 heads)",
+  "alt": [],
+  "origin": "long head: ischial tuberosity short head: posterior femur",
+  "insertion": "Common Insertion: Head of Fibula and Lateral Condyle of Tibia",
+  "innervation": "Sciatic nerve",
+  "action": "Hip extension & knee flexion"
+ },
+ {
+  "muscle": "Semitendinosus",
+  "label": "Semitendinosus",
+  "alt": [],
+  "origin": "ischial tuberosity",
+  "insertion": "medial condyle of tibia",
+  "innervation": "Sciatic nerve",
+  "action": "Hip extension & knee flexion"
+ },
+ {
+  "muscle": "Semimembranosus",
+  "label": "Semimembranosus",
+  "alt": [],
+  "origin": "ischial tuberosity",
+  "insertion": "medial condyle of tibia",
+  "innervation": "Sciatic nerve",
+  "action": "Hip extension & knee flexion"
+ },
+ {
+  "muscle": "Gluteus maximus",
+  "label": "Gluteus maximus",
+  "alt": [],
+  "origin": "Posterior Os Coxae",
+  "insertion": "Gluteal tuberosity of femur",
+  "innervation": "",
+  "action": "Hip Extension"
+ },
+ {
+  "muscle": "Gluteus medius",
+  "label": "Gluteus medius",
+  "alt": [],
+  "origin": "Deep to Maximus",
+  "insertion": "Greater Trochanter of Femur",
+  "innervation": "",
+  "action": "Hip ABDuction and Medial Rotation Hip ABDuction and Medial Rotation"
+ },
+ {
+  "muscle": "Gluteus minimus",
+  "label": "Gluteus minimus",
+  "alt": [],
+  "origin": "Deepest",
+  "insertion": "Greater Trochanter of Femur",
+  "innervation": "",
+  "action": "Hip ABDuction and Medial Rotation"
+ },
+ {
+  "muscle": "Gastrocnemius",
+  "label": "Posterior compartment Gastrocnemius (superficial) Soleus (deep to gastrocnemius)",
+  "alt": [
+   "Soleus",
+   "Triceps surae"
+  ],
+  "origin": "",
+  "insertion": "For the gastrocnemius: Achilles Tendon",
+  "innervation": "",
+  "action": "Plantar flexion of Ankle"
+ },
+ {
+  "muscle": "Fibularis muscles",
+  "label": "Lateral compartment Fibularis muscles",
+  "alt": [
+   "Fibularis longus",
+   "Fibularis brevis"
+  ],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Plantarflexion of Ankle and Eversion"
+ },
+ {
+  "muscle": "Dorsiflexors",
+  "label": "Anterior compartment Dorsiflexors",
+  "alt": [
+   "Tibialis anterior",
+   "Extensor digitorum longus",
+   "Extensor hallucis longus"
+  ],
+  "origin": "",
+  "insertion": "",
+  "innervation": "",
+  "action": "Dorsiflexion of Ankle and Inversion"
+ },
+ {
+  "muscle": "Sternocleidomastoid",
+  "label": "Sternocleidomastoid",
+  "alt": [],
+  "origin": "Sternum and clavicle",
+  "insertion": "Mastoid process of Temporal Bone",
+  "innervation": "",
+  "action": "Neck Flexion"
+ }
+]
