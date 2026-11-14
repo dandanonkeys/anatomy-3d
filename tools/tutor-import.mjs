@@ -39,12 +39,30 @@ const progress = readJSON(progressPath, { topic: slug, quizzes: [], weakAreas: [
 progress.quizzes ??= [];
 progress.spacedRepetition ??= {};
 
-// Don't import the same export twice.
+// Don't import the same answers twice. An "Export all" repeats sessions that
+// were already imported one by one, so keep only answers from sessions not
+// seen before. Imported session ids live next to the progress file, because
+// claude-tutor's progress format has no field for them.
+const sessionsPath = `${progressPath}.sessions.json`;
+const seen = new Set(readJSON(sessionsPath, []));
 const sig = (qz) => JSON.stringify([qz.date, qz.score, qz.total, qz.questions]);
-if (progress.quizzes.some((qz) => sig(qz) === sig(data.tutorQuiz))) {
+const fresh = (data.attempts ?? []).filter((a) => !seen.has(a.session));
+if (!fresh.length || progress.quizzes.some((qz) => sig(qz) === sig(data.tutorQuiz))) {
   console.log(`Already imported into ${progressPath}; nothing to do.`);
   process.exit(0);
 }
+if (fresh.length < data.attempts.length) {
+  console.log(`Skipping ${data.attempts.length - fresh.length} answers from sessions already imported.`);
+  const right = fresh.filter((a) => a.correct).length;
+  data.tutorQuiz = {
+    ...data.tutorQuiz,
+    date: new Date(fresh[fresh.length - 1].ts).toLocaleDateString('sv-SE'),
+    score: right,
+    total: fresh.length,
+    questions: fresh.map((a) => ({ format: a.type === 'name' ? 'fill' : 'mcq', concept: a.concept, correct: a.correct })),
+  };
+}
+for (const a of fresh) seen.add(a.session);
 progress.quizzes.push(data.tutorQuiz);
 
 // SM-2, as in claude-tutor's dashboard: correct = quality 5, incorrect = 0.
@@ -118,4 +136,5 @@ fs.mkdirSync(path.dirname(progressPath), { recursive: true });
 if (fs.existsSync(progressPath)) fs.copyFileSync(progressPath, `${progressPath}.bak`);
 fs.writeFileSync(progressPath, JSON.stringify(out, null, 2) + '\n');
 fs.writeFileSync(indexPath, JSON.stringify(index, null, 2) + '\n');
+fs.writeFileSync(sessionsPath, JSON.stringify([...seen], null, 2) + '\n');
 console.log(`\nWrote ${progressPath}\nUpdated ${indexPath}`);

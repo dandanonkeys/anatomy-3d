@@ -241,7 +241,10 @@ export function initQuiz(api) {
     else if (act === 'end') finish();
     else if (act === 'export') download(q.attempts);
     else if (act === 'export-all') download(log);
-    else if (act === 'clear') { log = []; store.set(LOG_KEY, log); renderSetup(); }
+    else if (act === 'clear') {
+      if (!confirm(`Delete all ${log.length} saved answers from this browser? This can't be undone. Use Export all first to keep a copy.`)) return;
+      log = []; store.set(LOG_KEY, log); renderSetup();
+    }
     else if (act === 'explore') setMode('explore');
   });
 

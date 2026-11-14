@@ -251,7 +251,7 @@ function ensureSystem(sys) {
     ui.refreshCounts();
   }).catch((err) => {
     w.loading.delete(sys);
-    showLoading(`The ${SYSTEMS[sys].label.toLowerCase()} models didn’t load (${err.message}). Turn the system off and on to retry.`);
+    showError(`The ${SYSTEMS[sys].label.toLowerCase()} models didn’t load (${err.message}). Turn the system off and on to retry.`);
     console.error(err);
   });
   w.loading.set(sys, p);
@@ -261,6 +261,9 @@ function ensureSystem(sys) {
 let loadingMsgs = 0;
 function showLoading(text) { loadingMsgs++; loadingEl.hidden = false; loadingEl.textContent = text; }
 function hideLoading() { if (--loadingMsgs <= 0) { loadingMsgs = 0; loadingEl.hidden = true; } }
+// An error replaces its loading message but doesn't count as loading, so a
+// retry can still hide the banner and the render loop can go idle.
+function showError(text) { hideLoading(); loadingEl.hidden = false; loadingEl.textContent = text; }
 
 // ---------- groups (lobes, muscle groups) ----------
 function buildGroups() {
@@ -765,6 +768,6 @@ loadBodyManifest().then(async () => {
   const q = params.get('select');
   if (q) { const s = api.search(q)[0]; await api.ensureLoaded(s); api.select(s ?? null, { fly: true }); }
 }).catch((err) => {
-  showLoading(`Models failed to load: ${err.message}. Check that public/models exists (see README: rebuilding the models).`);
+  showError(`Models failed to load: ${err.message}. Check that public/models exists (see README: rebuilding the models).`);
   console.error(err);
 });
