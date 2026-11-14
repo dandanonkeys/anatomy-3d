@@ -18,6 +18,10 @@
         <header class="brand">
           <h1>Body Atlas</h1>
           <p id="count" class="muted">Loading models…</p>
+          <div class="world-tabs" role="tablist" aria-label="View">
+            <button type="button" role="tab" data-world="body" aria-selected="true">Body</button>
+            <button type="button" role="tab" data-world="cells" aria-selected="false" tabindex="-1">Cells <kbd>C</kbd></button>
+          </div>
           <div class="mode-switch" role="group" aria-label="Mode">
             <button type="button" data-mode="explore" aria-pressed="true">Explore</button>
             <button type="button" data-mode="quiz" aria-pressed="false">Quiz <kbd>Q</kbd></button>
@@ -42,10 +46,11 @@
         <section id="info" class="info" aria-live="polite"></section>
 
         <footer class="credit">
-          Models: <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener">BodyParts3D</a>,
-          © 2008 Life Science Integrated Database Center,
-          <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener">CC BY-SA 2.1 JP</a>.
-          Simplified for the web.
+          Body models: <a href="https://www.z-anatomy.com/" target="_blank" rel="noopener">Z-Anatomy</a> (CC BY-SA 4.0),
+          built on <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener">BodyParts3D</a>,
+          © 2008 Database Center for Life Science (CC BY-SA 2.1 JP); web export by the
+          <a href="https://github.com/nqwrc/3d-anatomy" target="_blank" rel="noopener">3d-anatomy</a> project.
+          Definitions from Wikipedia (CC BY-SA). Landmarks are approximate. Cells are schematic.
         </footer>
       </aside>
 

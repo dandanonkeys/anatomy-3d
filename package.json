@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "convert": "node tools/convert.mjs"
+    "convert": "node tools/convert.mjs",
+    "convert:za": "node tools/convert-za.mjs",
+    "oian": "python3 -I tools/oian-from-docx.py"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
     "@gltf-transform/core": "^4.5.1",
     "@gltf-transform/extensions": "^4.5.1",
     "@gltf-transform/functions": "^4.5.1",
+    "draco3dgltf": "^1.5.7",
     "meshoptimizer": "^1.3.0",
     "vite": "^8.3.8"
   },
