@@ -1,6 +1,7 @@
 import { CONCEPTS, GROUPS } from './concepts.js';
 import { createPlayer, ARROW_COLORS } from './engine.js';
 import { VERIFIED } from './verified.js';
+import { createQuizUI } from './quiz-ui.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -36,12 +37,36 @@ const els = {
   list: $('#concept-list'), search: $('#search-input'), notes: $('#notes'), caption: $('#caption'),
   scene: $('#scene'), table: $('#table-view'), legend: $('#legend'), controls: $('#controls'), dots: $('#dots'),
   play: $('[data-act=play]'), speed: $('[data-act=speed]'), prev: $('[data-act=prev]'), next: $('[data-act=next]'),
+  app: $('#app'), bar: $('#quiz-bar'), modes: $('.mode-switch'),
 };
 
 let current = null;
 let status = { index: 0, count: 1, playing: false, speed: 1 };
+let mode = 'learn';
 
-const player = createPlayer(els.scene, { onChange: (s) => { status = s; syncStep(); } });
+const player = createPlayer(els.scene, {
+  onChange: (s) => { status = s; if (mode === 'quiz') quiz.sync(s); else syncStep(); },
+});
+
+const quiz = createQuizUI({
+  player, svg: els.scene, caption: els.caption, panel: els.notes, bar: els.bar, concepts: CONCEPTS, trust,
+  addFlag: (id, where, text) => updateReview((r) => { r.notes.push({ where: `Quiz · ${where}`, text, at: today() }); r.ok = undefined; }, id),
+  showScene: (on) => {
+    els.scene.hidden = !on; els.legend.hidden = !on;
+    els.table.hidden = true; els.controls.hidden = true;
+  },
+});
+
+function setMode(m) {
+  if (m === mode) return;
+  if (mode === 'quiz' && quiz.running && !confirm('Leave the quiz? This session will be discarded.')) return false;
+  mode = m;
+  els.app.classList.toggle('quiz-on', m === 'quiz');
+  for (const b of els.modes.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.mode === m));
+  if (m === 'quiz') { player.toggle && status.playing && player.toggle(); quiz.open(); }
+  else { quiz.close(); select(current?.id || CONCEPTS[0].id); }
+  return true;
+}
 
 /* ---------------- menu ---------------- */
 
@@ -196,13 +221,13 @@ function currentWhere() {
   return `Step ${status.index + 1} (${s.title})`;
 }
 
-function updateReview(fn) {
-  const r = review[current.id] || { notes: [] };
+function updateReview(fn, id = current.id) {
+  const r = review[id] || { notes: [] };
   r.notes ||= [];
   fn(r);
-  if (!r.ok && !r.notes.length) delete review[current.id]; else review[current.id] = r;
+  if (!r.ok && !r.notes.length) delete review[id]; else review[id] = r;
   saveReview();
-  renderReview(current);
+  if (mode === 'learn' && id === current?.id) renderReview(current);
   refreshTrust();
 }
 
@@ -252,7 +277,13 @@ function syncStep() {
 
 els.list.addEventListener('click', (e) => {
   const b = e.target.closest('.concept');
-  if (b) select(b.dataset.id);
+  if (!b) return;
+  if (mode === 'quiz') { current = CONCEPTS.find((c) => c.id === b.dataset.id) || current; setMode('learn'); return; }
+  select(b.dataset.id);
+});
+els.modes.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-mode]');
+  if (b) setMode(b.dataset.mode);
 });
 
 els.search.addEventListener('input', () => filterMenu(els.search.value));
@@ -295,6 +326,8 @@ els.notes.addEventListener('click', (e) => {
   else if (act === 'del') updateReview((r) => { r.notes.splice(+b.dataset.i, 1); });
 });
 els.notes.addEventListener('submit', (e) => {
+  // Only the learn-mode flag form; the quiz panel handles its own forms.
+  if (mode !== 'learn' || !e.target.closest('.flag-form')) return;
   e.preventDefault();
   const text = e.target.querySelector('textarea').value.trim();
   if (!text) { e.target.querySelector('textarea').focus(); return; }
@@ -317,6 +350,8 @@ els.notes.addEventListener('focusout', () => player.focus(null));
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === '/') { e.preventDefault(); els.search.focus(); els.search.select(); return; }
+  if (e.key === 'q' || e.key === 'Q') { setMode(mode === 'quiz' ? 'learn' : 'quiz'); return; }
+  if (mode === 'quiz') { if (e.key === 'Escape') quiz.escape(); return; }
   if (!current?.mech) return;
   if (e.key === 'ArrowRight') { e.preventDefault(); player.next(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); player.prev(); }
@@ -327,7 +362,9 @@ document.addEventListener('keydown', (e) => {
 
 window.addEventListener('hashchange', () => {
   const id = location.hash.slice(1);
-  if (id && id !== current?.id) select(id);
+  if (!id || id === current?.id) return;
+  if (mode === 'quiz') { current = CONCEPTS.find((c) => c.id === id) || current; setMode('learn'); return; }
+  select(id);
 });
 
 buildMenu();

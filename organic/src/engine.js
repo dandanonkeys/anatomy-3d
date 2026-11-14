@@ -302,11 +302,80 @@ function labelSvg(a) {
   return `<text class="atom" x="${f(a.x)}" y="${f(a.y)}" dy="0.35em" text-anchor="middle" opacity="${f(a.op)}">${inner}</text>`;
 }
 
+/* ---------------- quiz hit targets ---------------- */
+
+const pairOf = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+// Tappable points for state i, in the same SVG coordinates the renderer uses
+// (static end-of-state frame, same dotPoint() offsets as the drawn dots).
+// No DOM access, so node tests can check that every arrow is answerable.
+//   sources: lone pairs, radical electrons, bond midpoints
+//   dests:   atoms, bond midpoints, and "gaps" (non-bonded pairs a new bond can form
+//            between): every pair any arrow of this mechanism targets, plus up to
+//            2 nearby distractor pairs so the answer isn't given away.
+// key is the normalized answer id the quiz grades on (see quiz.js).
+export function targetsFor(mech, i) {
+  const labels = mech.atoms;
+  const A = normState(mech.states[i]);
+  const G = compose(labels, A, null, 0);
+  const sources = [], dests = [];
+  for (const [field, kind, extra] of [['lp', 'lp', 7], ['rad', 'rad', 6]]) {
+    for (const [id, angs] of Object.entries(A[field])) {
+      angs.forEach((a, k) => {
+        const p = dotPoint(G, labels, id, a, extra);
+        sources.push({ ref: `${kind}:${id}:${k}`, key: `${kind}:${id}`, kind, x: p.x, y: p.y });
+      });
+    }
+  }
+  const bonded = new Set();
+  for (const b of A.bonds) {
+    const [ax, ay] = G.pos[b.a], [bx, by] = G.pos[b.b];
+    const x = (ax + bx) / 2, y = (ay + by) / 2, pk = pairOf(b.a, b.b);
+    bonded.add(pk);
+    sources.push({ ref: `bond:${b.a}-${b.b}`, key: `bond:${pk}`, kind: 'bond', x, y });
+    dests.push({ ref: `bond:${b.a}-${b.b}`, key: `pair:${pk}`, kind: 'pair', x, y });
+  }
+  for (const [id, [x, y]] of Object.entries(G.pos)) dests.push({ ref: id, key: `atom:${id}`, kind: 'atom', x, y });
+
+  const addGap = (a, b) => {
+    const pk = pairOf(a, b);
+    if (bonded.has(pk) || dests.some((d) => d.key === `pair:${pk}`) || !G.pos[a] || !G.pos[b] || a === b) return false;
+    const x = (G.pos[a][0] + G.pos[b][0]) / 2, y = (G.pos[a][1] + G.pos[b][1]) / 2;
+    dests.push({ ref: `mid:${a}-${b}`, key: `pair:${pk}`, kind: 'gap', x, y });
+    return true;
+  };
+  for (const s of mech.states) {
+    for (const ar of s.arrows || []) {
+      for (const to of [ar.to, ...(ar.alt || []).map((x) => x.to)]) {
+        if (to.startsWith('mid:') || to.startsWith('bond:')) addGap(...to.split(':')[1].split('-'));
+      }
+    }
+  }
+  // Distractors: closest non-bonded pairs whose midpoint isn't already crowded.
+  const ids = Object.keys(G.pos), cand = [];
+  for (let x = 0; x < ids.length; x++) for (let y = x + 1; y < ids.length; y++) {
+    const [a, b] = [ids[x], ids[y]], [ax, ay] = G.pos[a], [bx, by] = G.pos[b];
+    const d = Math.hypot(ax - bx, ay - by);
+    if (d < 115 && !bonded.has(pairOf(a, b))) cand.push({ a, b, d, mx: (ax + bx) / 2, my: (ay + by) / 2 });
+  }
+  cand.sort((p, q) => p.d - q.d || pairOf(p.a, p.b).localeCompare(pairOf(q.a, q.b)));
+  let extra = 0;
+  for (const c of cand) {
+    if (extra >= 2) break;
+    if (dests.some((t) => Math.hypot(t.x - c.mx, t.y - c.my) < 18)) continue;
+    if (addGap(c.a, c.b)) extra++;
+  }
+  return { sources, dests };
+}
+
 /* ---------------- player ---------------- */
 
 export function createPlayer(svg, { onChange } = {}) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-  const P = { states: [], labels: {}, i: 0, phase: 'idle', t0: 0, idleAt: 0, prog: [], playing: false, speed: 1, focus: null, glow: null, raf: 0 };
+  // The renderer owns .render; .hits is left alone for the quiz's tap targets.
+  svg.innerHTML = '<g class="render"></g><g class="hits"></g>';
+  const renderG = svg.querySelector('.render');
+  const P = { states: [], labels: {}, i: 0, phase: 'idle', t0: 0, idleAt: 0, prog: [], playing: false, speed: 1, focus: null, glow: null, raf: 0, view: { hideArrows: false, shown: new Set() } };
 
   const emit = () => onChange?.({ index: P.i, count: P.states.length, phase: P.phase, playing: P.playing, speed: P.speed });
 
@@ -317,7 +386,10 @@ export function createPlayer(svg, { onChange } = {}) {
       for (const t of s.tags) { x0 = Math.min(x0, t.x - 60); x1 = Math.max(x1, t.x + 60); y0 = Math.min(y0, t.y - 14); y1 = Math.max(y1, t.y + 14); }
     }
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    const w = Math.max(600, x1 - x0 + 110), h = Math.max(300, y1 - y0 + 90);
+    // Narrow (phone) stages get a tighter minimum so molecules and tap targets stay big.
+    const sw = svg.getBoundingClientRect().width;
+    const narrow = sw > 0 && sw < 520;
+    const w = Math.max(narrow ? 380 : 600, x1 - x0 + (narrow ? 70 : 110)), h = Math.max(300, y1 - y0 + 90);
     return `${f(cx - w / 2)} ${f(cy - h / 2)} ${f(w)} ${f(h)}`;
   }
 
@@ -333,7 +405,7 @@ export function createPlayer(svg, { onChange } = {}) {
   function enter(i, animate) {
     P.i = i;
     const n = P.states[i].arrows.length;
-    if (animate && n && !reduce.matches) { P.phase = 'arrows'; P.prog = new Array(n).fill(0); P.t0 = performance.now(); }
+    if (animate && n && !reduce.matches && !P.view.hideArrows) { P.phase = 'arrows'; P.prog = new Array(n).fill(0); P.t0 = performance.now(); }
     else { P.phase = 'idle'; P.prog = new Array(n).fill(1); P.idleAt = performance.now(); }
     emit(); kick();
   }
@@ -391,8 +463,9 @@ export function createPlayer(svg, { onChange } = {}) {
     // electrons currently in use → tinted with their arrow's colour
     const tintDot = new Map(), tintBond = new Map();
     const geoms = A.arrows.map((arr) => arrowGeom(GA, P.labels, arr));
+    const visible = (n) => !P.view.hideArrows || P.view.shown.has(n);
     if (!morphing) geoms.forEach((g, n) => {
-      if (P.prog[n] <= 0 || (P.focus !== null && P.focus !== n)) return;
+      if (P.prog[n] <= 0 || !visible(n) || (P.focus !== null && P.focus !== n)) return;
       const c = ARROW_COLORS[n % ARROW_COLORS.length];
       if (g.src.kind === 'bond') tintBond.set(g.src.k, c); else tintDot.set(`${g.src.kind}:${g.src.id}:${g.src.i}`, c);
     });
@@ -422,10 +495,11 @@ export function createPlayer(svg, { onChange } = {}) {
 
     const arrowOp = morphing ? clamp(1 - mt / 0.3) : 1;
     geoms.forEach((g, n) => {
+      if (!visible(n)) return;
       const dim = P.focus !== null && P.focus !== n;
       out += arrowSvg(g, A.arrows[n], n, P.prog[n] ?? 0, arrowOp * (dim ? 0.18 : 1), P.focus === n);
     });
-    svg.innerHTML = out;
+    renderG.innerHTML = out;
   }
 
   return {
@@ -447,5 +521,11 @@ export function createPlayer(svg, { onChange } = {}) {
     },
     setSpeed(s) { P.speed = s; emit(); },
     focus(n) { P.focus = n; draw(); },
+    // Quiz view: hideArrows hides every arrow except indexes in `shown`, and
+    // stops arrows from animating in when a state is entered.
+    setView(v) { P.view = { ...P.view, ...v }; draw(); },
+    get index() { return P.i; },
+    get phase() { return P.phase; },
+    hitLayer: svg.querySelector('.hits'),
   };
 }

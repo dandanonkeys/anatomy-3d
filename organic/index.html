@@ -19,6 +19,10 @@
         <header class="brand">
           <h1>Orgo Mechanisms</h1>
           <p class="muted">Organic I · alkenes, alkynes, radicals, SN &amp; E</p>
+          <div class="mode-switch" role="group" aria-label="Mode">
+            <button type="button" data-mode="learn" aria-pressed="true">Learn</button>
+            <button type="button" data-mode="quiz" aria-pressed="false">Quiz <kbd>Q</kbd></button>
+          </div>
         </header>
         <div class="search" role="search">
           <label for="search-input" class="visually-hidden">Find a concept</label>
@@ -33,6 +37,7 @@
         <div id="caption" aria-live="polite"></div>
         <svg id="scene" role="img" aria-labelledby="caption" preserveAspectRatio="xMidYMid meet"></svg>
         <div id="table-view" hidden></div>
+        <div id="quiz-bar" hidden></div>
 
         <div id="legend" aria-label="Arrow key">
           <span><svg width="38" height="14" aria-hidden="true"><path d="M3 11 Q18 -2 31 8" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="35,10 26,10.5 30,3" fill="currentColor"/></svg>2 electrons</span>
