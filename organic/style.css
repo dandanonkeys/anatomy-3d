@@ -181,6 +181,49 @@ polygon.arrow-halo { fill: var(--field-2); }
 .kind { margin-left: 6px; font-size: 11.5px; color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
 .q-keys { font-size: 12.5px; margin: 20px 0 0; line-height: 1.9; }
 
+/* ---------- notes check: trust badge, flag notes, report ---------- */
+:root { --ok: #1d6b3a; --ok-soft: #e3f3e8; --warn: #8a5a00; --warn-soft: #fdf2dc; --bad: #a3271f; --bad-soft: #fbe8e6; }
+.c-mark { margin-left: auto; font-size: 13px; font-weight: 700; }
+.c-mark:empty { display: none; }
+.c-mark.is-verified, .report .is-verified { color: var(--ok); }
+.c-mark.is-checked, .report .is-checked { color: var(--accent); }
+.c-mark.is-flagged, .report .is-flagged { color: var(--bad); }
+.concept .c-meta { margin-left: 6px; }
+.concept .c-mark:empty + .c-meta { margin-left: auto; }
+
+.review { margin: 0 0 16px; }
+.trust { border-radius: 8px; padding: 8px 11px; font-size: 13.5px; }
+.trust p { margin: 2px 0 0; }
+.trust-badge { font-weight: 700; font-size: 13px; }
+.trust.is-unverified { background: var(--warn-soft); color: #5c3c00; }
+.trust.is-unverified .trust-badge { color: var(--warn); }
+.trust.is-checked { background: var(--accent-soft); color: #222f86; }
+.trust.is-verified { background: var(--ok-soft); color: #174d2b; }
+.trust.is-flagged { background: var(--bad-soft); color: #5a1b16; }
+.review-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.review button, .report button {
+  border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 5px 11px; cursor: pointer; font-size: 13.5px;
+}
+.review button:hover, .report button:hover:not(:disabled) { border-color: var(--ink); }
+.review button[aria-pressed=true] { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 700; }
+.review button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.report button:disabled { opacity: 0.45; cursor: default; }
+.flag-form { margin-top: 10px; display: grid; gap: 6px; font-size: 13.5px; }
+.flag-form textarea, .report-text {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; resize: vertical; background: #fff;
+}
+.flag-form textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.flag-buttons { display: flex; gap: 6px; }
+.flag-notes { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.flag-notes li { display: flex; gap: 8px; align-items: start; justify-content: space-between; font-size: 13.5px; border-left: 3px solid var(--bad); background: #fff; padding: 6px 8px; border-radius: 0 6px 6px 0; }
+.note-del { border: 0 !important; background: none !important; padding: 0 4px !important; font-size: 17px !important; line-height: 1; color: var(--muted); }
+
+.report { border-top: 1px solid var(--rule); padding-top: 14px; margin-top: auto; }
+.report-line { font-size: 13px; margin: 0 0 8px; line-height: 1.6; }
+.copy-status { font-size: 12.5px; margin: 6px 0 0; }
+.copy-status:empty { display: none; }
+@media (max-width: 760px) { .report { order: 3; margin-top: 4px; } }
+
 /* ---------- medium: menu + notes share the left column ---------- */
 @media (max-width: 1180px) {
   #app { grid-template-columns: 330px minmax(0, 1fr); grid-template-rows: minmax(0, 0.9fr) minmax(0, 1.1fr); grid-template-areas: 'menu stage' 'notes stage'; }

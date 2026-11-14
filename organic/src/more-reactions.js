@@ -549,7 +549,7 @@ const alkyneHydroboration = (() => {
       {
         title: 'Aldehyde', text: 'Tautomerisation gives an aldehyde. Compare HgSO₄/H₂SO₄ on the same alkyne, which gives the methyl ketone.',
         pos: { Cb, Ca, Me: at(Cb, 170, 70), Hb: at(Cb, -100, 62), Hc: at(Cb, 80, 62), Oy: at(Ca, -60, 66), Ha: at(Ca, 60, 62) },
-        bonds: 'Me-Cb Cb-Ca Ca-Ha Cb-Hb Cb-Hc Ca=Oy', tags: [[455, 400, 'aldehyde (anti-Markovnikov)', 'key']],
+        bonds: 'Me-Cb Cb-Ca Ca-Ha Cb-Hb Cb-Hc Ca=Oy', lp: { Oy: [0, -120] }, tags: [[455, 400, 'aldehyde (anti-Markovnikov)', 'key']],
       },
     ],
   };

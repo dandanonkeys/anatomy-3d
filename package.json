@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "convert": "node tools/convert.mjs",
     "convert:za": "node tools/convert-za.mjs",
-    "oian": "python3 -I tools/oian-from-docx.py"
+    "oian": "python3 -I tools/oian-from-docx.py",
+    "check:orgo": "node organic/tools/validate.mjs"
   },
   "keywords": [],
   "author": "",

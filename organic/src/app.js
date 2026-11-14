@@ -1,5 +1,6 @@
 import { CONCEPTS, GROUPS } from './concepts.js';
 import { createPlayer, ARROW_COLORS } from './engine.js';
+import { VERIFIED } from './verified.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -9,7 +10,29 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } },
 };
 
+// Your own check of each concept against your notes, kept in this browser:
+// { [id]: { ok: 'YYYY-MM-DD' | undefined, notes: [{ where, text, at }] } }
+const REVIEW_KEY = 'orgo:review';
+let review = (() => { try { return JSON.parse(store.get(REVIEW_KEY) || '{}') || {}; } catch { return {}; } })();
+const saveReview = () => store.set(REVIEW_KEY, JSON.stringify(review));
+const today = () => new Date().toISOString().slice(0, 10);
+
+const TRUST = {
+  verified: { mark: '✓', label: 'Verified against notes' },
+  checked: { mark: '✓', label: 'Checked by you' },
+  flagged: { mark: '⚑', label: 'Flagged' },
+  unverified: { mark: '', label: 'Unverified' },
+};
+function trust(c) {
+  const r = review[c.id];
+  if (r?.notes?.length) return 'flagged';
+  if (VERIFIED[c.id]) return 'verified';
+  if (r?.ok) return 'checked';
+  return 'unverified';
+}
+
 const els = {
+  report: $('#report'),
   list: $('#concept-list'), search: $('#search-input'), notes: $('#notes'), caption: $('#caption'),
   scene: $('#scene'), table: $('#table-view'), legend: $('#legend'), controls: $('#controls'), dots: $('#dots'),
   play: $('[data-act=play]'), speed: $('[data-act=speed]'), prev: $('[data-act=prev]'), next: $('[data-act=next]'),
@@ -27,10 +50,42 @@ function buildMenu() {
     const items = CONCEPTS.filter((c) => c.group === g).map((c) => {
       const steps = c.mech ? c.mech.states.length : 0;
       const meta = c.table ? 'table' : steps > 1 ? `${steps} steps` : 'diagram';
-      return `<li><button type="button" class="concept" data-id="${c.id}"><span class="c-name">${esc(c.name)}</span><span class="c-meta">${meta}</span></button></li>`;
+      return `<li><button type="button" class="concept" data-id="${c.id}"><span class="c-name">${esc(c.name)}</span><span class="c-mark" aria-hidden="true"></span><span class="c-meta">${meta}</span></button></li>`;
     }).join('');
     return `<section class="group" data-group="${esc(g)}"><h2>${esc(g)}</h2><ul>${items}</ul></section>`;
   }).join('') + '<p class="empty muted" hidden>No concept matches.</p>';
+  refreshTrust();
+}
+
+// Menu marks + the progress line in the menu footer.
+function refreshTrust() {
+  for (const b of els.list.querySelectorAll('.concept')) {
+    const t = trust(CONCEPTS.find((x) => x.id === b.dataset.id));
+    const mark = b.querySelector('.c-mark');
+    mark.textContent = TRUST[t].mark;
+    mark.className = `c-mark is-${t}`;
+    b.title = TRUST[t].label;
+  }
+  const count = (t) => CONCEPTS.filter((c) => trust(c) === t).length;
+  const touched = Object.values(review).some((r) => r.ok || r.notes?.length);
+  els.report.innerHTML = `<h2>Notes check</h2>
+    <p class="report-line"><span class="is-verified">${count('verified')} verified</span> · <span class="is-checked">${count('checked')} checked</span> · <span class="is-flagged">${count('flagged')} flagged</span> · ${count('unverified')} to go</p>
+    <button type="button" data-review="copy"${touched ? '' : ' disabled'}>Copy review report</button>
+    <p class="copy-status muted" aria-live="polite"></p>`;
+}
+
+function reportText() {
+  const lines = [`# Orgo Mechanisms review (${today()})`, ''];
+  const ok = CONCEPTS.filter((c) => review[c.id]?.ok && !review[c.id]?.notes?.length);
+  const bad = CONCEPTS.filter((c) => review[c.id]?.notes?.length);
+  lines.push('## Matches my notes', ...(ok.length ? ok.map((c) => `- ${c.id} (${c.name}): ${review[c.id].ok}`) : ['- none']), '');
+  lines.push('## Something is wrong');
+  if (!bad.length) lines.push('- none');
+  for (const c of bad) {
+    lines.push(`### ${c.id} (${c.name})`);
+    for (const n of review[c.id].notes) lines.push(`- ${n.where}: ${n.text}`);
+  }
+  return lines.join('\n');
 }
 
 function filterMenu(q) {
@@ -85,7 +140,7 @@ function renderTable(t) {
 }
 
 function renderNotes(c) {
-  let html = `<h2 class="sel-name">${esc(c.name)}</h2><p class="group-tag">${esc(c.group)}</p>`;
+  let html = `<h2 class="sel-name">${esc(c.name)}</h2><p class="group-tag">${esc(c.group)}</p><div id="review" class="review"></div>`;
   html += `<p class="summary">${esc(c.summary)}</p>`;
   html += `<h3>Key points</h3><ul class="points">${c.points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
   if (c.watch) html += `<div class="watch"><h3>Watch out</h3><p>${esc(c.watch)}</p></div>`;
@@ -106,6 +161,62 @@ function renderNotes(c) {
   html += '<p class="q-keys muted"><kbd>←</kbd> <kbd>→</kbd> step · <kbd>Space</kbd> play · <kbd>R</kbd> replay arrows · <kbd>/</kbd> search</p>';
   els.notes.innerHTML = html;
   els.notes.scrollTop = 0;
+  renderReview(c);
+}
+
+function renderReview(c) {
+  const box = els.notes.querySelector('#review');
+  if (!box) return;
+  const t = trust(c), r = review[c.id] || {};
+  const help = {
+    verified: `Checked against the course notes on ${VERIFIED[c.id]}.`,
+    checked: `You marked this as matching your notes on ${r.ok}. Copy the review report to make it official.`,
+    flagged: 'You noted a difference from your notes. Copy the review report so it gets fixed.',
+    unverified: 'AI-written and not yet checked against your notes. Trust it less until you do.',
+  }[t];
+  const notes = (r.notes || []).map((n, i) =>
+    `<li><span><b>${esc(n.where)}:</b> ${esc(n.text)}</span><button type="button" class="note-del" data-review="del" data-i="${i}" aria-label="Delete this note">×</button></li>`).join('');
+  box.innerHTML = `<div class="trust is-${t}"><span class="trust-badge">${TRUST[t].mark ? `${TRUST[t].mark} ` : ''}${TRUST[t].label}</span><p>${esc(help)}</p></div>
+    <div class="review-actions">
+      <button type="button" data-review="ok" aria-pressed="${!!r.ok}">✓ Matches my notes</button>
+      <button type="button" data-review="flag">⚑ Something's wrong</button>
+    </div>
+    <form class="flag-form" hidden>
+      <label for="flag-text">What differs from your notes? <span class="muted flag-where"></span></label>
+      <textarea id="flag-text" rows="3" placeholder="e.g. Br should add anti, arrow 2 should start at the π bond"></textarea>
+      <div class="flag-buttons"><button type="submit" class="primary">Save note</button><button type="button" data-review="cancel">Cancel</button></div>
+    </form>
+    ${notes ? `<ul class="flag-notes">${notes}</ul>` : ''}`;
+}
+
+// Where in the concept a flag note points: the step on screen right now.
+function currentWhere() {
+  if (!current?.mech) return 'table';
+  const s = current.mech.states[status.index];
+  return `Step ${status.index + 1} (${s.title})`;
+}
+
+function updateReview(fn) {
+  const r = review[current.id] || { notes: [] };
+  r.notes ||= [];
+  fn(r);
+  if (!r.ok && !r.notes.length) delete review[current.id]; else review[current.id] = r;
+  saveReview();
+  renderReview(current);
+  refreshTrust();
+}
+
+async function copyReport() {
+  const text = reportText();
+  const out = els.report.querySelector('.copy-status');
+  try {
+    await navigator.clipboard.writeText(text);
+    out.textContent = 'Copied. Paste it back into the chat.';
+  } catch {
+    out.innerHTML = '<textarea class="report-text" rows="6" readonly></textarea>Copy blocked; select the text above and copy it.';
+    const ta = out.querySelector('textarea');
+    ta.value = text; ta.focus(); ta.select();
+  }
 }
 
 /* ---------------- step sync ---------------- */
@@ -170,7 +281,27 @@ els.controls.addEventListener('click', (e) => {
 
 els.notes.addEventListener('click', (e) => {
   const h = e.target.closest('.step-head');
-  if (h) player.goTo(+h.dataset.step);
+  if (h) { player.goTo(+h.dataset.step); return; }
+  const b = e.target.closest('[data-review]');
+  if (!b) return;
+  const form = els.notes.querySelector('.flag-form');
+  const act = b.dataset.review;
+  if (act === 'ok') updateReview((r) => { r.ok = r.ok ? undefined : today(); });
+  else if (act === 'flag') {
+    form.hidden = false;
+    form.querySelector('.flag-where').textContent = `· ${currentWhere()}`;
+    form.querySelector('textarea').focus();
+  } else if (act === 'cancel') form.hidden = true;
+  else if (act === 'del') updateReview((r) => { r.notes.splice(+b.dataset.i, 1); });
+});
+els.notes.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = e.target.querySelector('textarea').value.trim();
+  if (!text) { e.target.querySelector('textarea').focus(); return; }
+  updateReview((r) => { r.notes.push({ where: currentWhere(), text, at: today() }); r.ok = undefined; });
+});
+els.report.addEventListener('click', (e) => {
+  if (e.target.closest('[data-review=copy]')) copyReport();
 });
 // Hover/focus an arrow's explanation → spotlight that arrow on the stage.
 const spot = (e) => {
