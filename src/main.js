@@ -155,6 +155,36 @@ function attachMesh(s, mesh, w, color) {
   w.group.add(mesh);
 }
 
+// ---------- batching ----------
+// Each body system is drawn as two BatchedMeshes (one multi-draw call each)
+// instead of one draw call per structure: an opaque batch for structures at
+// rest and a transparent one, sharing the same geometry buffers, for
+// structures fading in or see-through. Selected, hovered and quiz-marked
+// structures leave the batch and draw as their own mesh, which keeps its
+// individual material (emissive pulse, tint). The individual meshes stay in
+// the scene for picking and label raycasts, which ignore `visible`.
+function buildBatch(w, list, roughness) {
+  if (!list.length) return;
+  let verts = 0, idx = 0;
+  for (const s of list) { verts += s.mesh.geometry.attributes.position.count; idx += s.mesh.geometry.index.count; }
+  const opaque = new THREE.BatchedMesh(list.length, verts, idx, new THREE.MeshStandardMaterial({ roughness, metalness: 0 }));
+  const ids = list.map((s) => {
+    const id = opaque.addInstance(opaque.addGeometry(s.mesh.geometry));
+    opaque.setMatrixAt(id, s.mesh.matrixWorld);
+    opaque.setColorAt(id, s.color);
+    opaque.setVisibleAt(id, false);
+    return id;
+  });
+  opaque.computeBoundingBox();
+  opaque.computeBoundingSphere();
+  const fade = new THREE.BatchedMesh(1, 1, 1).copy(opaque);
+  fade.geometry = opaque.geometry; // share buffers; copy() clones them
+  fade.material = new THREE.MeshStandardMaterial({ roughness, metalness: 0, transparent: true, depthWrite: false });
+  fade.renderOrder = 2;
+  list.forEach((s, i) => { s.batch = { opaque, fade, id: ids[i], alpha: -1 }; });
+  w.group.add(opaque, fade);
+}
+
 // ---------- body: manifest, lazy per-system loading ----------
 let manifest = null;
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
@@ -178,10 +208,12 @@ function ensureSystem(sys) {
     gltf.scene.updateMatrixWorld(true);
     const found = [];
     gltf.scene.traverse((o) => { if (o.isMesh) found.push(o); });
+    const attached = [];
     for (const o of found) {
       const s = w.structures.get(o.name) ?? w.structures.get(o.parent?.name);
-      if (s && !s.mesh) attachMesh(s, o, w, SYSTEMS[s.system].color);
+      if (s && !s.mesh) { attachMesh(s, o, w, SYSTEMS[s.system].color); attached.push(s); }
     }
+    buildBatch(w, attached, sys === 'skeletal' ? 0.72 : 0.5);
     w.loaded.add(sys);
     w.loading.delete(sys);
     if (w.loaded.has('skeletal')) buildLandmarks();
@@ -344,20 +376,36 @@ function updateLOD(dt) {
 
 const MARK_SEL = new THREE.Color(0x3346c4);
 const MARK_WRONG = new THREE.Color(0xc4332f);
+const rgba = new THREE.Vector4();
 function applyLook(s) {
   const m = s.mesh.material;
-  const visibleSystem = world.systemOn[s.system] && !s.hidden && (!state.isolated || isHighlighted(s) > 0);
+  const hl = isHighlighted(s);
+  const visibleSystem = world.systemOn[s.system] && !s.hidden && (!state.isolated || hl > 0);
   const opacity = s.fade * (1 - 0.85 * s.xray) * (s.baseOpacity ?? 1);
-  s.mesh.visible = visibleSystem && s.fade > 0.02;
+  const shown = visibleSystem && s.fade > 0.02;
+  s.shown = shown;
+  const hov = s === state.hovered && !hl ? 0.2 : 0;
+  const wrong = s.quizMark === 'wrong' ? 0.55 : 0;
   const transparent = opacity < 0.98;
+  const b = s.batch;
+  if (b) {
+    const own = shown && (hl > 0 || hov > 0 || wrong > 0);
+    b.opaque.setVisibleAt(b.id, shown && !own && !transparent);
+    b.fade.setVisibleAt(b.id, shown && !own && transparent);
+    if (shown && !own && transparent && Math.abs(opacity - b.alpha) > 0.004) {
+      b.fade.setColorAt(b.id, rgba.set(s.color.r, s.color.g, s.color.b, opacity));
+      b.alpha = opacity;
+    }
+    s.mesh.visible = own;
+    if (!own) return;
+  } else {
+    s.mesh.visible = shown;
+  }
   if (m.transparent !== transparent) { m.transparent = transparent; m.needsUpdate = true; }
   m.opacity = opacity;
   m.depthWrite = !transparent || opacity > 0.6;
   s.mesh.renderOrder = transparent ? 2 : 0;
-  const hl = isHighlighted(s);
   const sel = hl ? (0.12 + 0.3 * pulse) * hl : 0;
-  const hov = s === state.hovered && !hl ? 0.2 : 0;
-  const wrong = s.quizMark === 'wrong' ? 0.55 : 0;
   m.emissive.setHex(wrong ? 0xc4332f : 0x3346c4);
   m.emissiveIntensity = wrong || sel + hov;
   m.color.copy(s.color);
@@ -366,7 +414,7 @@ function applyLook(s) {
 }
 
 function isPickable(s) {
-  return !!s.mesh && s.mesh.visible && s.fade > 0.5 && s.xray < 0.5 && (s.baseOpacity ?? 1) > 0.3;
+  return !!s.mesh && s.shown && s.fade > 0.5 && s.xray < 0.5 && (s.baseOpacity ?? 1) > 0.3;
 }
 
 // ---------- camera flights ----------
@@ -610,8 +658,7 @@ const api = {
 };
 window.atlas = api;
 
-const labels = new Labels({ stage, camera, controls, api });
-const ui = initUI(api);
+const labels = new Labels({ stage, camera, controls, api });const ui = initUI(api);
 initQuiz(api);
 
 // ---------- loop ----------

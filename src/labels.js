@@ -12,6 +12,7 @@ const MIN_PX = { 1: 26, 2: 22, 3: 18 };
 const CHAR_W = 6.9;
 const LABEL_H = 20;
 const RESELECT_MS = 220;
+const BUDGET_MS = 3; // per-frame time for the label selection pass
 const isPoint = (s) => !s.mesh && !s.members;
 
 export class Labels {
@@ -30,6 +31,10 @@ export class Labels {
     this.raycaster = new THREE.Raycaster();
     this.raycaster.firstHitOnly = true; // three-mesh-bvh: stop at the first hit per mesh
     this.v = new THREE.Vector3();
+    this.hits = [];
+    this.job = null;
+    this.sel = null;
+    this.deadline = 0;
     for (let i = 0; i < MAX_LABELS + MAX_LANDMARKS; i++) this.pool.push(this.makeLabel());
   }
 
@@ -46,7 +51,7 @@ export class Labels {
     return { el, line, dot, s: null };
   }
 
-  reset() { this.active = []; this.last = 0; }
+  reset() { this.active = []; this.last = 0; this.job = null; }
 
   resize(w, h) {
     this.w = w;
@@ -59,40 +64,49 @@ export class Labels {
     return { x: (this.v.x + 1) / 2 * this.w, y: (1 - this.v.y) / 2 * this.h, z: this.v.z };
   }
 
+  // Occlusion test from the camera position captured when the current
+  // selection pass started (this.cam), against this.blockers sorted by the
+  // distance to their bounding sphere's near side (this.near).
   visibleFromCamera(s, ignore = null) {
-    const cam = this.camera.position;
+    const cam = this.cam;
     const dir = this.v.copy(s.anchor).sub(cam);
     const dist = dir.length();
     const tol = Math.max(0.004, dist * 0.02);
+    const far = dist - tol;
     this.raycaster.set(cam, dir.normalize());
     this.raycaster.near = 0;
-    this.raycaster.far = dist - tol;
-    // Candidate blockers: bounding sphere crosses the ray before the label point.
-    // Test nearest first and stop at the first hit.
+    this.raycaster.far = far;
+    // Blockers are sorted nearest first, so stop at the first hit and at the
+    // first blocker whose sphere starts beyond the label point.
     const ray = this.raycaster.ray;
-    const list = [];
-    for (const o of this.blockers) {
+    const { blockers, near } = this;
+    const hits = this.hits;
+    for (let i = 0; i < blockers.length; i++) {
+      if (near[i] >= far) break;
+      const o = blockers[i];
       if (o === s || o === ignore) continue;
-      const near = o.center.distanceTo(cam) - o.radius;
-      if (near < dist - tol && ray.distanceSqToPoint(o.center) <= o.radius * o.radius) list.push([Math.max(0, near), o.mesh]);
-    }
-    list.sort((a, b) => a[0] - b[0]);
-    const hits = [];
-    for (const [, mesh] of list) {
-      mesh.raycast(this.raycaster, hits);
-      if (hits.length) return false;
+      if (ray.distanceSqToPoint(o.center) > o.radius * o.radius) continue;
+      o.mesh.raycast(this.raycaster, hits);
+      if (hits.length) { hits.length = 0; return false; }
     }
     return true;
   }
 
   onScreen(p) { return p.z <= 1 && p.x > 8 && p.x < this.w - 8 && p.y > 8 && p.y < this.h - 8; }
 
-  choose() {
+  // Generator: yields whenever the frame's time budget (this.deadline) runs
+  // out, so the occlusion raycasts spread over a few frames instead of
+  // stalling one. Returns the chosen structures.
+  *choose() {
     const { state } = this.api;
-    this.blockers = [];
+    this.cam = this.camera.position.clone();
+    const bl = [];
     for (const o of this.api.structures.values()) {
-      if (o.mesh?.visible && o.xray < 0.5 && o.fade > 0.5 && (o.baseOpacity ?? 1) > 0.5) this.blockers.push(o);
+      if (o.shown && o.xray < 0.5 && o.fade > 0.5 && (o.baseOpacity ?? 1) > 0.5) bl.push([Math.max(0, o.center.distanceTo(this.cam) - o.radius), o]);
     }
+    bl.sort((a, b) => a[0] - b[0]);
+    this.blockers = bl.map((x) => x[1]);
+    this.near = Float64Array.from(bl, (x) => x[0]);
     const sel = state.selected;
     const tiers = this.api.tiers;
     const tier = tiers[state.tier];
@@ -103,7 +117,7 @@ export class Labels {
       if (s.members) { if (s === sel) cand.push({ s, score: -1e9 }); continue; }
       if (isPoint(s)) {
         const bone = s.bone;
-        if (!bone?.mesh?.visible || bone.xray > 0.5) continue;
+        if (!bone?.shown || bone.xray > 0.5) continue;
         const show = s === sel || bone === sel || sel?.bone === bone || (finest && bone.px > this.h * 0.3);
         if (!show) continue;
         const p = this.project(s.anchor);
@@ -111,7 +125,7 @@ export class Labels {
         points.push({ s, score: s === sel ? -1e9 : Math.hypot(p.x - this.w / 2, p.y - this.h / 2) });
         continue;
       }
-      if (!s.mesh?.visible || s.fade < 0.6 || s.xray > 0.5) continue;
+      if (!s.shown || s.fade < 0.6 || s.xray > 0.5) continue;
       const isSel = s === sel;
       // Big (or merged, repeated) structures: anchor the label on the part of
       // the surface nearest the view centre, so it stays on screen when zoomed in.
@@ -134,30 +148,39 @@ export class Labels {
     for (const c of cand) {
       if (out.length >= MAX_LABELS * 1.5) break;
       if (c.s === sel || c.s.members || this.visibleFromCamera(c.s)) out.push(c.s);
+      if (performance.now() > this.deadline) yield;
     }
     let n = 0;
     for (const c of points) {
       if (n >= MAX_LANDMARKS) break;
       const onSel = c.s === sel || sel === c.s.bone || sel?.bone === c.s.bone;
       if (onSel || this.visibleFromCamera(c.s, c.s.bone)) { out.push(c.s); n++; }
+      if (performance.now() > this.deadline) yield;
     }
     return out;
   }
 
   update() {
     const now = performance.now();
-    if (now - this.last > RESELECT_MS) {
-      this.last = now;
-      this.active = this.choose();
-    }
     const sel = this.api.state.selected;
+    // Restart the pass when the selection changes so its label shows at once.
+    if (sel !== this.sel) { this.sel = sel; this.job = null; this.last = 0; }
+    if (!this.job && now - this.last > RESELECT_MS) {
+      this.last = now;
+      this.job = this.choose();
+    }
+    if (this.job) {
+      this.deadline = now + BUDGET_MS;
+      const r = this.job.next();
+      if (r.done) { this.active = r.value; this.job = null; }
+    }
     const placed = [];
     const centre = this.project(this.controls.target);
     let n = 0;
     const order = sel && this.active.includes(sel) ? [sel, ...this.active.filter((s) => s !== sel)] : this.active;
     for (const s of order) {
       if (n >= this.pool.length) break;
-      if (s.mesh && !s.mesh.visible) continue;
+      if (s.mesh && !s.shown) continue;
       const p = this.project(s.anchor);
       if (p.z > 1) continue;
       const point = isPoint(s);
