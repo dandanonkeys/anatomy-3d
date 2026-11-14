@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orgo Mechanisms</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 22 Q16 2 26 18%22 fill=%22none%22 stroke=%22%233346c4%22 stroke-width=%223.5%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M21 19 L27 21 L28 14 Z%22 fill=%22%233346c4%22/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <nav id="menu" aria-label="Concepts">
+        <header class="brand">
+          <h1>Orgo Mechanisms</h1>
+          <p class="muted">Organic I · alkenes to substitution &amp; elimination</p>
+        </header>
+        <div class="search" role="search">
+          <label for="search-input" class="visually-hidden">Find a concept</label>
+          <input id="search-input" type="search" placeholder="Find a concept, e.g. SN2" autocomplete="off" />
+          <kbd class="search-key" aria-hidden="true">/</kbd>
+        </div>
+        <div id="concept-list"></div>
+      </nav>
+
+      <main id="stage">
+        <div id="caption" aria-live="polite"></div>
+        <svg id="scene" role="img" aria-labelledby="caption" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="table-view" hidden></div>
+
+        <div id="legend" aria-label="Arrow key">
+          <span><svg width="38" height="14" aria-hidden="true"><path d="M3 11 Q18 -2 31 8" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="35,10 26,10.5 30,3" fill="currentColor"/></svg>2 electrons</span>
+          <span><svg width="38" height="14" aria-hidden="true"><path d="M3 11 Q18 -2 34 9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="34,9 27,2.5 28.5,8" fill="currentColor"/></svg>1 electron (fishhook)</span>
+          <span><svg width="30" height="14" aria-hidden="true"><line x1="2" y1="7" x2="28" y2="7" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/></svg>partial bond</span>
+          <span><b class="legend-n">1</b> arrow order</span>
+        </div>
+
+        <div id="controls" role="group" aria-label="Playback">
+          <button type="button" data-act="restart" title="Restart (Home)" aria-label="Restart">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2v12M14 2 6 8l8 6z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" data-act="prev" title="Previous step (←)" aria-label="Previous step">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" data-act="play" class="play" title="Play / pause (Space)" aria-label="Play">
+            <svg class="i-play" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg>
+            <svg class="i-pause" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/></svg>
+            <span class="play-label">Play</span>
+          </button>
+          <button type="button" data-act="next" title="Next step (→)" aria-label="Next step">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="button" data-act="replay" title="Replay arrows for this step (R)" aria-label="Replay arrows">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2v3.5H9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="divider" aria-hidden="true"></span>
+          <ol id="dots" aria-label="Steps"></ol>
+          <span class="divider" aria-hidden="true"></span>
+          <button type="button" data-act="speed" class="speed" title="Animation speed" aria-label="Animation speed">1×</button>
+        </div>
+      </main>
+
+      <aside id="notes" aria-live="polite"></aside>
+    </div>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
