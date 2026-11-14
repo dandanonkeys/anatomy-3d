@@ -34,6 +34,7 @@ export class Labels {
     this.hits = [];
     this.job = null;
     this.sel = null;
+    this.stale = true;
     this.deadline = 0;
     for (let i = 0; i < MAX_LABELS + MAX_LANDMARKS; i++) this.pool.push(this.makeLabel());
   }
@@ -52,6 +53,9 @@ export class Labels {
   }
 
   reset() { this.active = []; this.last = 0; this.job = null; }
+
+  // A selection pass is in progress, or the shown labels may be stale.
+  get busy() { return !!this.job; }
 
   resize(w, h) {
     this.w = w;
@@ -165,7 +169,10 @@ export class Labels {
     const sel = this.api.state.selected;
     // Restart the pass when the selection changes so its label shows at once.
     if (sel !== this.sel) { this.sel = sel; this.job = null; this.last = 0; }
-    if (!this.job && now - this.last > RESELECT_MS) {
+    // Start a new pass only when the scene may have changed since the last one
+    // (main.js sets `stale`), so a still scene stops re-running passes.
+    if (!this.job && this.stale && now - this.last > RESELECT_MS) {
+      this.stale = false;
       this.last = now;
       this.job = this.choose();
     }

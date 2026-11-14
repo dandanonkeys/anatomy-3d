@@ -225,7 +225,10 @@ function run(points, steps, sigma) {
     if (op === 'band') {
       const d = dirVec(args[0], sigma);
       const pr = pts.map((p) => p[0] * d[0] + p[1] * d[1] + p[2] * d[2]);
-      const max = Math.max(...pr), min = Math.min(...pr), ext = max - min || 1;
+      // Loops, not Math.max(...pr): spreading large vertex arrays can throw.
+      let max = -Infinity, min = Infinity;
+      for (const v of pr) { if (v > max) max = v; if (v < min) min = v; }
+      const ext = max - min || 1;
       pts = pts.filter((_, i) => { const f = (max - pr[i]) / ext; return f >= args[1] && f <= args[2]; });
     } else if (op === 'mid') {
       const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
@@ -239,8 +242,8 @@ function run(points, steps, sigma) {
       const sorted = pts.map((p) => [s * (p[0] * d[0] + p[1] * d[1] + p[2] * d[2]), p]).sort((a, b) => b[0] - a[0]).slice(0, 4);
       return sorted.reduce((a, [, p]) => a.map((v, i) => v + p[i] / sorted.length), [0, 0, 0]);
     } else if (op === 'center' || op === 'snap') {
-      const mn = [0, 1, 2].map((i) => Math.min(...pts.map((p) => p[i])));
-      const mx = [0, 1, 2].map((i) => Math.max(...pts.map((p) => p[i])));
+      const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+      for (const p of pts) for (let i = 0; i < 3; i++) { if (p[i] < mn[i]) mn[i] = p[i]; if (p[i] > mx[i]) mx[i] = p[i]; }
       const c = mn.map((v, i) => (v + mx[i]) / 2);
       if (op === 'center') return c;
       let best = pts[0], bd = Infinity;

@@ -2,6 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "atlas", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    { "name": "atlas-build", "runtimeExecutable": "sh", "runtimeArgs": ["-c", "npx vite build && npx vite preview --port 4173 --strictPort"], "port": 4173 },
     { "name": "orgo", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "5180", "--bind", "127.0.0.1", "--directory", "organic"], "port": 5180 }
   ]
 }

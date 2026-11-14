@@ -14,8 +14,37 @@ import { initQuiz } from './quiz.js';
 import './style.css';
 
 // BVH-accelerated raycasting: picking, hover and label occlusion all raycast.
+// The BVH is built lazily, the first time a ray reaches a mesh's bounding
+// sphere, so loading a system doesn't stall on ~1M triangles of BVH builds.
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
+const raySphere = new THREE.Sphere();
+THREE.Mesh.prototype.raycast = function (raycaster, intersects) {
+  const g = this.geometry;
+  if (!g.boundsTree) {
+    if (!g.boundingSphere) g.computeBoundingSphere();
+    raySphere.copy(g.boundingSphere).applyMatrix4(this.matrixWorld);
+    if (!raycaster.ray.intersectsSphere(raySphere)) return;
+    g.computeBoundsTree();
+  }
+  acceleratedRaycast.call(this, raycaster, intersects);
+};
+
+// Build the remaining BVHs in browser idle time after a system loads, a few
+// ms at a time, so the first zoom-in doesn't build dozens of them in one frame.
+const bvhQueue = [];
+const idle = window.requestIdleCallback ?? ((cb) => setTimeout(() => cb({ timeRemaining: () => 8 }), 50));
+function queueBVH(geometries) {
+  const start = !bvhQueue.length;
+  bvhQueue.push(...geometries);
+  if (start) idle(drainBVH);
+}
+function drainBVH(deadline) {
+  while (bvhQueue.length && deadline.timeRemaining() > 4) {
+    const g = bvhQueue.pop();
+    if (!g.boundsTree) g.computeBoundsTree();
+  }
+  if (bvhQueue.length) idle(drainBVH);
+}
 
 const BASE = import.meta.env.BASE_URL;
 const canvas = document.getElementById('view');
@@ -133,7 +162,6 @@ function attachMesh(s, mesh, w, color) {
   });
   mesh.geometry.computeBoundingBox();
   mesh.geometry.computeBoundingSphere();
-  mesh.geometry.computeBoundsTree();
   s.box = new THREE.Box3().setFromObject(mesh);
   s.center = s.box.getCenter(new THREE.Vector3());
   s.radius = s.box.getSize(new THREE.Vector3()).length() / 2;
@@ -214,10 +242,12 @@ function ensureSystem(sys) {
       if (s && !s.mesh) { attachMesh(s, o, w, SYSTEMS[s.system].color); attached.push(s); }
     }
     buildBatch(w, attached, sys === 'skeletal' ? 0.72 : 0.5);
+    queueBVH(attached.map((s) => s.mesh.geometry));
     w.loaded.add(sys);
     w.loading.delete(sys);
     if (w.loaded.has('skeletal')) buildLandmarks();
     hideLoading();
+    wake();
     ui.refreshCounts();
   }).catch((err) => {
     w.loading.delete(sys);
@@ -349,6 +379,7 @@ function updateLOD(dt) {
   ray.origin.copy(camera.position);
   ray.direction.copy(focus).sub(camera.position).normalize();
   const k = 1 - Math.exp(-dt * 10);
+  let moving = false;
 
   for (const s of world.structures.values()) {
     if (!s.mesh) continue;
@@ -363,8 +394,10 @@ function updateLOD(dt) {
       const contains = s.box.containsPoint(focus);
       if (blocks && (!contains || s.level < tierLevel || sel)) xrayGoal = 1;
     }
-    s.fade += (fadeGoal - s.fade) * k;
-    s.xray += (xrayGoal - s.xray) * k;
+    // Ease toward the goal; snap once close so the scene can settle and idle.
+    const df = fadeGoal - s.fade, dx = xrayGoal - s.xray;
+    if (Math.abs(df) < 0.003) s.fade = fadeGoal; else { s.fade += df * k; moving = true; }
+    if (Math.abs(dx) < 0.003) s.xray = xrayGoal; else { s.xray += dx * k; moving = true; }
     applyLook(s);
   }
 
@@ -372,6 +405,7 @@ function updateLOD(dt) {
   camera.near = THREE.MathUtils.clamp(dist * 0.03, 0.002, 0.2);
   camera.far = dist + Math.max(2.5, dist * 4);
   camera.updateProjectionMatrix();
+  return moving;
 }
 
 const MARK_SEL = new THREE.Color(0x3346c4);
@@ -446,6 +480,7 @@ function stepFlight(now) {
 
 // ---------- picking ----------
 const raycaster = new THREE.Raycaster();
+raycaster.firstHitOnly = true; // three-mesh-bvh: nearest hit per mesh is enough
 const pointer = new THREE.Vector2();
 
 function pickHit(clientX, clientY) {
@@ -672,16 +707,43 @@ function resize() {
 new ResizeObserver(resize).observe(stage);
 resize();
 
+// Render on demand: a still scene draws nothing. The loop keeps ticking but
+// only does work while something is in motion (camera, flight, selection
+// pulse, fades/x-ray, a label pass, pending hover) and for WAKE_MS after any
+// input, API call, resize or model load.
+const WAKE_MS = 350;
+let awakeUntil = 0;
+function wake() { awakeUntil = Math.max(awakeUntil, performance.now() + WAKE_MS); }
+for (const t of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'click', 'input', 'change']) {
+  addEventListener(t, wake, { capture: true, passive: true });
+}
+// State-changing API calls (UI, quiz, URL params, scripts) wake the loop.
+for (const k of ['select', 'setSystem', 'ensureLoaded', 'frame', 'frameSphere', 'home', 'isolate', 'hide', 'showAll', 'reset', 'view', 'setWorld', 'viewCells']) {
+  const fn = api[k];
+  api[k] = function (...a) { wake(); return fn.apply(this, a); };
+}
+new ResizeObserver(wake).observe(stage);
+
+const lastCam = new THREE.Matrix4();
 let lastT = performance.now();
+let lodMoving = true;
 renderer.setAnimationLoop(() => {
   const now = performance.now();
   const dt = Math.min((now - lastT) / 1000, 0.1);
   lastT = now;
   stepFlight(now);
   controls.update();
+  camera.updateMatrixWorld();
+  const camMoved = !lastCam.equals(camera.matrixWorld);
+  if (camMoved || flight || pulseT < 1 || lodMoving || hoverEvent || loadingMsgs) wake();
+  const awake = now <= awakeUntil;
+  // A running label pass finishes even after everything else has settled.
+  if (!awake && !labels.busy) return;
+  if (awake) labels.stale = true;
+  lastCam.copy(camera.matrixWorld);
   pulseT = Math.min(1, pulseT + dt / 0.9);
   pulse = reduceMotion ? 0 : Math.sin(pulseT * Math.PI);
-  updateLOD(dt);
+  lodMoving = updateLOD(dt);
   updateHover();
   renderer.render(scene, camera);
   labels.update();
