@@ -82,7 +82,7 @@ export function initUI(api) {
   input.addEventListener('focus', () => { if (input.value.trim()) results.hidden = false; });
 
   document.addEventListener('keydown', (e) => {
-    if (e.target.matches('input, textarea')) return;
+    if (e.target.matches('input, textarea') || api.state.quiz) return;
     if (e.key === '/') { e.preventDefault(); input.focus(); }
     else if (e.key === 'Escape') api.select(null);
     else if (e.key.toLowerCase() === 'f') api.frame();
@@ -127,7 +127,7 @@ export function initUI(api) {
 
   // ----- hover tooltip -----
   function hover(s, x, y) {
-    if (!s || s === api.state.selected) { hoverEl.hidden = true; return; }
+    if (!s || s === api.state.selected || api.state.quizHideNames) { hoverEl.hidden = true; return; }
     const r = $('stage').getBoundingClientRect();
     hoverEl.hidden = false;
     hoverEl.textContent = s.name;

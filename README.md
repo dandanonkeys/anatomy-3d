@@ -35,6 +35,60 @@ npm run dev        # http://localhost:3000
   the rest.
 - Deep link: `?select=femur` opens with the first match selected.
 
+## Quiz mode
+
+Press `Q` (or the *Quiz* switch at the top of the panel). Pick question types,
+systems, scale levels, *Ignore left / right*, and a length, then *Start quiz*.
+Leaving quiz mode puts the system toggles and camera back how they were.
+
+- **Find the X**: the view frames the region (the whole body for level 1) and
+  the labels are hidden. Click the structure, or press `←`/`→` to step through
+  the structures in the quiz's systems and levels and `Enter` to choose. A wrong
+  pick turns red and the right answer is highlighted and labelled.
+- **Name this**: a structure is highlighted with labels and hover names hidden.
+  Type its name and press `Enter`. Matching ignores case, punctuation, word
+  order, filler words (*of, the, bone, muscle*) and small typos, and ignores
+  left/right if that option is on. With it off, naming the right structure on
+  the wrong side is marked wrong and told apart. `Enter` on an empty box shows
+  the answer (counts as a miss). `F` frames the structure.
+- `Enter` or `N` goes to the next question, `Esc` ends the quiz. A missed
+  structure comes back three questions later (once). The results screen lists
+  misses and has *Practise misses*.
+- Every answer is saved in this browser (localStorage), so a reload doesn't lose
+  it. The setup screen shows saved results with *Export all* and *Clear*.
+
+### Exporting to claude-tutor
+
+*Export for claude-tutor* (results screen) or *Export all* (setup screen)
+downloads `body-atlas-quiz-<date>.json` (`schema: "body-atlas-quiz/1"`):
+
+- `attempts`: every answer with timestamp, type (`find`/`name`), concept,
+  exact structure, system, level, what you answered, correct, and time taken.
+- `concepts`: concept → attempts, correct, `lastResult`, `lastSeen`, history.
+- `tutorQuiz`: a ready-made entry for the `quizzes` array of claude-tutor's
+  progress file (`format` is `mcq` for *Find*, `fill` for *Name*).
+
+A concept is the structure name, without the side when *Ignore left / right* is
+on (so left and right femur both train "Femur"). Merge an export into
+claude-tutor with:
+
+```bash
+node tools/tutor-import.mjs ~/Downloads/body-atlas-quiz-2026-11-13-20-15.json --topic anatomy-physiology-1 --dry-run
+node tools/tutor-import.mjs ~/Downloads/body-atlas-quiz-2026-11-13-20-15.json --topic anatomy-physiology-1
+```
+
+It appends the quiz to `~/.claude/learning/progress/<topic>.json`, recomputes
+weak/strong areas and the overall score, updates SM-2 spaced repetition per
+concept the same way the claude-tutor dashboard does (a concept counts as
+recalled only if every attempt at it in the export was right), updates
+`index.json`, and keeps the previous file as `.bak`. Importing the same export
+twice does nothing. The topic defaults to the one typed on the quiz setup
+screen. After that, claude-tutor's session reminder counts the structures that
+are due, `/review` shows your weak structures, and `/quiz anatomy-physiology-1`
+can drill them in text. You can also skip the script and tell Claude to "add
+this Body Atlas export to my anatomy-physiology-1 progress" with the file
+attached; the `tutorQuiz` block is already in the plugin's format.
+
 ## Data: real vs. placeholder
 
 All geometry is real (BodyParts3D, built from a CT/MRI-based human model). There's
@@ -73,7 +127,8 @@ add structures, add rows to `tools/selection.json` (`id`, `name`, `system`, `lev
 `window.scene`, `window.__THREE_CAMERA__` and `window.__renderer__` are exposed for
 the parallax-threejs / threejs-devtools tooling. `window.atlas` is a small scripting
 API: `atlas.view('Liver', 0.4)`, `atlas.select('lunate')`,
-`atlas.setSystem('muscular', true)`, `atlas.tierName()`.
+`atlas.setSystem('muscular', true)`, `atlas.tierName()`. `atlas.quiz` drives
+quiz mode (`setMode('quiz')`, `start()`, `answer('femur')`, `export()`).
 
 ## Credits
 

@@ -7,6 +7,7 @@ import { computeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 import { SYSTEMS, TIERS, tierFor } from './systems.js';
 import { Labels } from './labels.js';
 import { initUI } from './ui.js';
+import { initQuiz } from './quiz.js';
 import './style.css';
 
 // BVH-accelerated raycasting: picking, hover and label occlusion all raycast.
@@ -80,7 +81,7 @@ function baseColor(s) {
 }
 
 async function load() {
-  const manifest = await (await fetch('/models/manifest.json')).json();
+  const manifest = await (await fetch(`${import.meta.env.BASE_URL}models/manifest.json`)).json();
   const byFile = new Map();
   for (const s of manifest.structures) {
     if (!byFile.has(s.file)) byFile.set(s.file, []);
@@ -90,7 +91,7 @@ async function load() {
   const loading = document.getElementById('loading');
   let done = 0;
   await Promise.all([...byFile.keys()].map(async (file) => {
-    const gltf = await loader.loadAsync(`/models/${file}`);
+    const gltf = await loader.loadAsync(`${import.meta.env.BASE_URL}models/${file}`);
     const group = new THREE.Group();
     group.name = file.replace('.glb', '');
     gltf.scene.updateMatrixWorld(true);
@@ -221,7 +222,10 @@ function applyLook(s) {
   s.mesh.renderOrder = transparent ? 2 : 0;
   const sel = s === state.selected ? 0.6 + 0.25 * pulse : 0;
   const hov = s === state.hovered && s !== state.selected ? 0.2 : 0;
-  m.emissiveIntensity = sel + hov;
+  // Quiz feedback: a wrong click is marked red until the next question.
+  const wrong = s.quizMark === 'wrong' ? 0.55 : 0;
+  m.emissive.setHex(wrong ? 0xc4332f : 0x3346c4);
+  m.emissiveIntensity = wrong || sel + hov;
 }
 
 export function isPickable(s) {
@@ -278,6 +282,7 @@ canvas.addEventListener('pointerup', (e) => {
   down = null;
   if (moved > 5) return;
   const s = pick(e.clientX, e.clientY);
+  if (api.onPick?.(s)) return; // quiz mode takes clicks over
   if (s) api.select(s, { fly: true }); else api.select(null);
 });
 
@@ -334,6 +339,20 @@ const api = {
     ui.syncSystems();
   },
   frame(s = state.selected) { if (s) frame(s); },
+  // Fly so a sphere (centre [x,y,z] in metres, radius) fills the view, looking from the front.
+  frameSphere(center, radius) {
+    const c = new THREE.Vector3(...center);
+    const fit = (radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2))) * 1.15;
+    flyTo(c, c.clone().add(new THREE.Vector3(0, 0.05, 1).normalize().multiplyScalar(Math.max(fit, 0.08))));
+  },
+  home() { flyTo(HOME.target, HOME.position); },
+  // Screen position (px, relative to the stage) of a structure's label anchor; z > 1 means behind the camera.
+  toScreen(s) {
+    camera.updateMatrixWorld();
+    const v = s.anchor.clone().project(camera);
+    return { x: (v.x + 1) / 2 * stage.clientWidth, y: (1 - v.y) / 2 * stage.clientHeight, z: v.z };
+  },
+  isPickable,
   isolate(on = !state.isolated) { state.isolated = on && !!state.selected; ui.showInfo(state.selected); },
   hide(s = state.selected) {
     if (!s) return;
@@ -363,6 +382,7 @@ window.atlas = api;
 
 const labels = new Labels({ stage, camera, controls, api });
 const ui = initUI(api);
+initQuiz(api);
 
 // ---------- loop ----------
 function resize() {

@@ -18,7 +18,13 @@
         <header class="brand">
           <h1>Body Atlas</h1>
           <p id="count" class="muted">Loading models…</p>
+          <div class="mode-switch" role="group" aria-label="Mode">
+            <button type="button" data-mode="explore" aria-pressed="true">Explore</button>
+            <button type="button" data-mode="quiz" aria-pressed="false">Quiz <kbd>Q</kbd></button>
+          </div>
         </header>
+
+        <section id="quiz" class="quiz" aria-label="Quiz" aria-live="polite"></section>
 
         <div class="search" role="search">
           <label for="search-input" class="visually-hidden">Find a structure</label>
@@ -48,6 +54,8 @@
         <svg id="leaders" aria-hidden="true"></svg>
         <div id="labels" aria-hidden="true"></div>
         <div id="hover" role="tooltip" hidden></div>
+        <div id="quiz-banner" hidden></div>
+        <div id="quiz-cursor" hidden aria-hidden="true"></div>
 
         <div id="scale" aria-label="Zoom scale">
           <ol id="tiers"></ol>
