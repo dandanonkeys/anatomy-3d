@@ -15,7 +15,8 @@ import os from 'node:os';
 import path from 'node:path';
 
 const args = process.argv.slice(2);
-const file = args.find((a) => !a.startsWith('--'));
+// The file is the first argument that is neither a flag nor a flag's value.
+const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--topic');
 const flag = (name) => { const i = args.indexOf(`--${name}`); return i >= 0 ? args[i + 1] : undefined; };
 const dryRun = args.includes('--dry-run');
 if (!file) {

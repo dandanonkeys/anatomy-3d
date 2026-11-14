@@ -9,8 +9,9 @@
 // Results are kept in localStorage and export as JSON for the claude-tutor
 // plugin (see tools/tutor-import.mjs and the README).
 
+import { esc } from './ui.js';
+
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const LOG_KEY = 'bodyAtlas.quizLog';
 const SETTINGS_KEY = 'bodyAtlas.quizSettings';
 const REASK_GAP = 3; // a missed structure comes back after this many questions

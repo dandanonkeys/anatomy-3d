@@ -1,4 +1,4 @@
-// node --test organic/tools/   (also run by `npm run check:orgo`)
+// node --test organic/tools/quiz.test.mjs   (also run by `npm run check:orgo`)
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CONCEPTS } from '../src/concepts.js';

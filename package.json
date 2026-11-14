@@ -9,7 +9,8 @@
     "convert": "node tools/convert.mjs",
     "convert:za": "node tools/convert-za.mjs",
     "oian": "python3 -I tools/oian-from-docx.py",
-    "check:orgo": "node organic/tools/validate.mjs && node --test organic/tools/"
+    "check:orgo": "node organic/tools/validate.mjs && node --test organic/tools/quiz.test.mjs",
+    "test": "npm run check:orgo && node --test tools/atlas-quiz.test.mjs"
   },
   "keywords": [],
   "author": "",

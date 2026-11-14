@@ -1,7 +1,7 @@
 import { CELL_TYPES } from './systems.js';
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+export const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const KIND_LABEL = { landmark: 'Bone landmark', joint: 'Joint', region: 'Bone region', suture: 'Suture' };
 
 export function initUI(api) {

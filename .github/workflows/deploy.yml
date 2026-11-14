@@ -24,8 +24,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Broken Orgo content (bad arrow refs, failing quiz tests) stops the deploy.
-      - run: npm run check:orgo
+      # Broken Orgo content (bad arrow refs) or a failing test stops the deploy.
+      - run: npm test
       # Serve from https://<user>.github.io/<repo>/
       - run: npm run build -- --base=/${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3

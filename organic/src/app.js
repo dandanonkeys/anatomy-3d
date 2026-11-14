@@ -16,7 +16,7 @@ const store = {
 const REVIEW_KEY = 'orgo:review';
 let review = (() => { try { return JSON.parse(store.get(REVIEW_KEY) || '{}') || {}; } catch { return {}; } })();
 const saveReview = () => store.set(REVIEW_KEY, JSON.stringify(review));
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date().toLocaleDateString('sv-SE'); // local YYYY-MM-DD
 
 const TRUST = {
   verified: { mark: '✓', label: 'Verified against notes' },

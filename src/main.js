@@ -245,7 +245,9 @@ function ensureSystem(sys) {
     queueBVH(attached.map((s) => s.mesh.geometry));
     w.loaded.add(sys);
     w.loading.delete(sys);
-    if (w.loaded.has('skeletal')) buildLandmarks();
+    // Landmark rules use skeletal bones and the spinal cord (nervous), so no
+    // other system's load can add a landmark.
+    if (w.loaded.has('skeletal') && (sys === 'skeletal' || sys === 'nervous')) buildLandmarks();
     hideLoading();
     wake();
     ui.refreshCounts();
