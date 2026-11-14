@@ -71,7 +71,7 @@ function select(id, { focusStage = false } = {}) {
   renderNotes(c);
   if (isTable) {
     renderTable(c.table);
-    els.caption.innerHTML = `<p class="cap-title">${esc(c.name)}</p><p class="cap-text">Compare the four pathways side by side.</p>`;
+    els.caption.innerHTML = `<p class="cap-title">${esc(c.name)}</p><p class="cap-text">${esc(c.tableCaption || 'Compare the four pathways side by side.')}</p>`;
   } else {
     player.load(c.mech);
   }

@@ -1,6 +1,8 @@
 // Concept library: quick explanations + animated mechanisms.
 // Geometry format is documented at the top of engine.js.
 
+import { MORE_CONCEPTS } from './more-reactions.js';
+
 // Point at distance r from atom position c, at angle deg (0 = right, 90 = down).
 const at = (c, deg, r = 66) => {
   const a = (deg * Math.PI) / 180;
@@ -411,9 +413,9 @@ const radicalHBr = (() => {
 
 /* ---------------- Library ---------------- */
 
-export const GROUPS = ['Foundations', 'Substitution', 'Elimination', 'Alkene additions', 'Choosing'];
+export const GROUPS = ['Foundations', 'Substitution', 'Elimination', 'Alkene additions', 'Alkene oxidation & reduction', 'Alkynes', 'Radicals', 'Choosing'];
 
-export const CONCEPTS = [
+const BASE_CONCEPTS = [
   {
     id: 'curved-arrows', group: 'Foundations', name: 'Curved arrows',
     summary: 'Curved arrows track electrons, never atoms. The tail sits on a lone pair or a bond; the head shows where those electrons end up: a new bond or a lone pair.',
@@ -579,3 +581,5 @@ export const CONCEPTS = [
     },
   },
 ];
+
+export const CONCEPTS = [...BASE_CONCEPTS, ...MORE_CONCEPTS];
