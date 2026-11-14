@@ -96,7 +96,8 @@ export class Labels {
       this.last = now;
       this.active = this.choose();
     }
-    const placed = [];
+    // Keep labels off the scale widget (bottom-left) and the Reset button (top-right).
+    const placed = [{ x: 0, y: this.h - 76, w: 250, h: 76 }, { x: this.w - 130, y: 0, w: 130, h: 52 }];
     const centre = this.project(this.controls.target);
     let n = 0;
     for (const s of this.active) {

@@ -32,6 +32,12 @@ const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 20);
 const key = new THREE.DirectionalLight(0xffffff, 1.6);
 key.position.set(0.6, 0.8, 1);
 camera.add(key);
+// Rim light from behind the model (in camera space) so silhouettes, especially
+// dark vessels and muscle, separate from the dark field.
+// Light comes from behind-left-above, so only edges facing sideways catch it.
+const rim = new THREE.DirectionalLight(0xdfe8ff, 1.4);
+rim.position.set(-0.7, 0.5, -0.5);
+camera.add(rim, rim.target); // target at the camera origin: direction stays fixed to the view
 scene.add(camera, new THREE.HemisphereLight(0xf4f7ff, 0x8a7b70, 0.6));
 
 const controls = new OrbitControls(camera, canvas);
@@ -210,6 +216,8 @@ function updateLOD(dt) {
   camera.updateProjectionMatrix();
 }
 
+const MARK_SEL = new THREE.Color(0x3346c4);
+const MARK_WRONG = new THREE.Color(0xc4332f);
 function applyLook(s) {
   const m = s.mesh.material;
   const visibleSystem = systemOn[s.system] && !s.hidden && (!state.isolated || s === state.selected);
@@ -220,12 +228,16 @@ function applyLook(s) {
   m.opacity = opacity;
   m.depthWrite = !transparent || opacity > 0.6;
   s.mesh.renderOrder = transparent ? 2 : 0;
-  const sel = s === state.selected ? 0.6 + 0.25 * pulse : 0;
+  const sel = s === state.selected ? 0.12 + 0.3 * pulse : 0;
   const hov = s === state.hovered && s !== state.selected ? 0.2 : 0;
   // Quiz feedback: a wrong click is marked red until the next question.
   const wrong = s.quizMark === 'wrong' ? 0.55 : 0;
   m.emissive.setHex(wrong ? 0xc4332f : 0x3346c4);
   m.emissiveIntensity = wrong || sel + hov;
+  // Tint the surface itself too: glow alone washes out to pale lilac on bone.
+  m.color.copy(s.color);
+  if (wrong) m.color.lerp(MARK_WRONG, 0.6);
+  else if (sel) m.color.lerp(MARK_SEL, 0.75);
 }
 
 export function isPickable(s) {
