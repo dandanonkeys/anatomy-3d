@@ -348,6 +348,7 @@ els.notes.addEventListener('mouseleave', () => player.focus(null));
 els.notes.addEventListener('focusout', () => player.focus(null));
 
 document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('intro').hidden) return;
   if (e.target.matches('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === '/') { e.preventDefault(); els.search.focus(); els.search.select(); return; }
   if (e.key === 'q' || e.key === 'Q') { setMode(mode === 'quiz' ? 'learn' : 'quiz'); return; }
@@ -366,6 +367,30 @@ window.addEventListener('hashchange', () => {
   if (mode === 'quiz') { current = CONCEPTS.find((c) => c.id === id) || current; setMode('learn'); return; }
   select(id);
 });
+
+// intro: title screen, then the distillation plays
+// No deep-link skip: select() always writes #id, so a hash can't tell a shared link from a reload.
+{
+  const intro = $('#intro'), app = $('#app'), startBtn = $('#intro-start');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let ended = false;
+  const end = () => {
+    if (ended) return;
+    ended = true;
+    intro.classList.add('gone');
+    app.inert = false;
+    setTimeout(() => { intro.hidden = true; $('#search-input').focus(); }, 600);
+  };
+  startBtn.focus();
+  startBtn.addEventListener('click', () => {
+    if (reduced) { end(); return; }
+    intro.classList.add('playing');
+    setTimeout(end, 3600);
+  });
+  // The start click bubbles up here after `playing` is set; skip that one.
+  intro.addEventListener('click', (e) => { if (e.target !== startBtn && intro.classList.contains('playing')) end(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') end(); });
+}
 
 buildMenu();
 select(location.hash.slice(1) || store.get('orgo:last') || CONCEPTS[0].id);

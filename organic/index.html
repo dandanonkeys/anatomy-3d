@@ -14,7 +14,31 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="app">
+    <section id="intro" aria-labelledby="intro-h">
+      <div class="title">
+        <h1 id="intro-h">Orgo Mechanisms</h1>
+        <p class="tag">Animated organic chemistry mechanisms</p>
+        <p class="authors">By Daniel Ionin &amp; Claude</p>
+        <button id="intro-start" type="button">Start learning</button>
+      </div>
+      <svg id="still" viewBox="0 0 300 180" aria-hidden="true">
+        <path class="liquid" d="M40 120 A30 30 0 0 0 100 120 Z"/>
+        <circle class="glass" cx="70" cy="120" r="30"/>
+        <path class="glass" d="M63 92 V60 M77 92 V60 M59 60 H81"/>
+        <circle class="bubble" cx="62" cy="136" r="2.5" style="animation-delay: 0s"/>
+        <circle class="bubble" cx="74" cy="141" r="2" style="animation-delay: 0.5s"/>
+        <circle class="bubble" cx="80" cy="131" r="2.5" style="animation-delay: 1s"/>
+        <path class="flame" d="M70 154 C62 162 62 170 70 176 C78 170 78 162 70 154 Z"/>
+        <line class="tube" x1="70" y1="64" x2="228" y2="120"/>
+        <line class="tube-in" x1="70" y1="64" x2="228" y2="120"/>
+        <path class="glass" d="M223 128 H233 V142 L249 172 H207 L223 142 Z"/>
+        <path class="liquid-r" d="M207 172 L219 150 H237 L249 172 Z"/>
+        <circle class="drop" r="2.6" cx="0" cy="0" style="animation-delay: 0s"/>
+        <circle class="drop" r="2.6" cx="0" cy="0" style="animation-delay: 0.4s"/>
+        <circle class="drop" r="2.6" cx="0" cy="0" style="animation-delay: 0.8s"/>
+      </svg>
+    </section>
+    <div id="app" inert>
       <nav id="menu" aria-label="Concepts">
         <header class="brand">
           <h1>Orgo Mechanisms</h1>

@@ -334,3 +334,51 @@ polygon.arrow-halo { fill: var(--field-2); }
 @keyframes q-flash { from { opacity: 1; } to { opacity: 0; } }
 @media (max-width: 760px) { #quiz-bar { bottom: 78px; } }
 @media (prefers-reduced-motion: reduce) { .q-msg.is-bad { animation: none; } .hit-flash { animation: none; } }
+
+/* ---------- intro: title screen, then a distillation plays ---------- */
+#intro {
+  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; text-align: center;
+  background: radial-gradient(120% 90% at 50% 42%, var(--field-1) 0%, #1f2a31 55%, var(--field-2) 100%);
+  color: var(--stage-ink); transition: opacity 0.6s ease;
+}
+#intro.gone { opacity: 0; pointer-events: none; }
+#intro > * { grid-area: 1 / 1; }
+#intro .title { display: grid; justify-items: center; transition: opacity 0.5s ease; }
+#intro.playing .title { opacity: 0; pointer-events: none; }
+#intro h1 { margin: 0; font-size: clamp(40px, 8vw, 72px); letter-spacing: -0.02em; }
+#intro .tag { margin: 0; color: var(--stage-muted); font-size: 17px; }
+#intro .authors { margin: 8px 0 0; color: var(--stage-muted); font-size: 14px; }
+#intro button {
+  margin-top: 18px; padding: 12px 28px; border: 0; border-radius: 999px;
+  background: var(--accent); color: #fff; font-size: 17px; font-weight: 500; cursor: pointer;
+}
+#intro button:focus-visible { outline-color: var(--stage-accent); }
+
+#still { width: min(560px, 90vw); height: auto; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+#intro.playing #still { opacity: 1; }
+#still .glass { fill: none; stroke: var(--stage-ink); stroke-width: 2.2; stroke-linejoin: round; }
+#still .liquid, #still .liquid-r { fill: #7fb6e6; }
+#still .liquid-r { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0.2); }
+#still .tube { stroke: var(--stage-line); stroke-width: 12; stroke-linecap: round; }
+#still .tube-in { stroke: var(--stage-muted); stroke-width: 3; stroke-linecap: round; opacity: 0.7; }
+#still .flame { fill: #f0a23a; transform-box: fill-box; transform-origin: 50% 100%; }
+#still .bubble { fill: #dbeefc; opacity: 0; }
+#still .drop { fill: var(--stage-accent); opacity: 0; offset-path: path('M70 64 L228 120 L228 150'); }
+
+#intro.playing .flame { animation: flicker 0.42s ease-in-out infinite alternate; }
+#intro.playing .bubble { animation: bubble 1.5s ease-in infinite; }
+#intro.playing .liquid-r { animation: fill 3.6s ease-in-out forwards; }
+#intro.playing .drop { animation: drip 1.2s linear infinite; }
+@keyframes flicker { from { transform: scaleY(1); } to { transform: scaleY(1.12); } }
+@keyframes bubble {
+  0% { transform: translateY(0); opacity: 0; }
+  25% { opacity: 0.9; }
+  100% { transform: translateY(-22px); opacity: 0; }
+}
+@keyframes fill { from { transform: scaleY(0.2); } to { transform: scaleY(1); } }
+@keyframes drip {
+  0% { offset-distance: 0%; opacity: 0; }
+  10%, 90% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { #intro.playing * { animation: none !important; } }
