@@ -483,6 +483,81 @@ function stepFlight(now) {
   if (t >= 1) flight = null;
 }
 
+// ---------- intro: the skeleton assembles after "Start learning" ----------
+// Bones fly in from scattered spots, feet first, skull last, by moving their
+// instances in the skeletal BatchedMesh; other systems stay hidden, then fade in.
+const introEl = document.getElementById('intro');
+const INTRO_MS = 3200, PIECE_MS = 1100;
+let intro = null;
+const iR = new THREE.Matrix4(), iM = new THREE.Matrix4(), iV = new THREE.Vector3(), iQ = new THREE.Quaternion(), iQ0 = new THREE.Quaternion();
+const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+function startIntro() {
+  introEl.classList.add('gone');
+  document.getElementById('app').inert = false;
+  if (reduceMotion) return endIntro();
+  const bones = [...worlds.body.structures.values()].filter((s) => s.system === 'skeletal' && s.batch);
+  const ys = bones.map((s) => s.center.y);
+  const lo = Math.min(...ys), span = Math.max(...ys) - lo || 1;
+  const spread = INTRO_MS - PIECE_MS;
+  intro = {
+    t0: performance.now(),
+    bones: bones.map((s) => {
+      const off = new THREE.Vector3().randomDirection();
+      off.z = Math.abs(off.z) * 0.6; // scatter toward the viewer, not behind the body
+      return {
+        s, off: off.multiplyScalar(0.7 + Math.random() * 0.9),
+        q: new THREE.Quaternion().setFromEuler(new THREE.Euler(...[0, 0, 0].map(() => (Math.random() - 0.5) * 6))),
+        delay: ((s.center.y - lo) / span) * spread * 0.85 + Math.random() * spread * 0.15,
+      };
+    }),
+  };
+}
+
+function stepIntro(now) {
+  if (!intro) return;
+  const e = now - intro.t0;
+  if (e > INTRO_MS + 600) return endIntro();
+  for (const { s, off, q, delay } of intro.bones) {
+    let m = ZERO; // not yet launched
+    if (e >= delay - 200) {
+      const t = easeOut(THREE.MathUtils.clamp((e - delay) / PIECE_MS, 0, 1)), k = 1 - t;
+      iR.makeRotationFromQuaternion(iQ.slerpQuaternions(q, iQ0, t));
+      iV.copy(s.center).applyMatrix4(iR); // rotate about the bone's own centre
+      iR.setPosition(s.center.x + off.x * k - iV.x, s.center.y + off.y * k - iV.y, s.center.z + off.z * k - iV.z);
+      m = iM.multiplyMatrices(iR, s.mesh.matrixWorld);
+    }
+    s.batch.opaque.setMatrixAt(s.batch.id, m);
+    s.batch.fade.setMatrixAt(s.batch.id, m);
+  }
+  for (const s of worlds.body.structures.values()) {
+    if (s.batch && s.system !== 'skeletal') s.batch.opaque.visible = s.batch.fade.visible = false;
+  }
+  // Camera swings from a raised three-quarter view to the home view.
+  const t = easeOut(Math.min(1, e / (INTRO_MS + 500))), k = 1 - t;
+  const h = worlds.body.home;
+  const dist = h.position.distanceTo(h.target) + k * 1.6;
+  controls.target.copy(h.target);
+  camera.position.set(Math.sin(k * 0.9) * dist, h.position.y + k * 0.5, h.target.z + Math.cos(k * 0.9) * dist);
+}
+
+function endIntro() {
+  for (const { s } of intro?.bones ?? []) {
+    s.batch.opaque.setMatrixAt(s.batch.id, s.mesh.matrixWorld);
+    s.batch.fade.setMatrixAt(s.batch.id, s.mesh.matrixWorld);
+  }
+  for (const s of worlds.body.structures.values()) {
+    if (!s.batch || s.system === 'skeletal') continue;
+    s.batch.opaque.visible = s.batch.fade.visible = true;
+    s.fade = 0; // updateLOD fades it back in
+  }
+  intro = null;
+  if (world === worlds.body) api.home(true);
+  stage.classList.remove('intro-on');
+  wake();
+}
+
 // ---------- picking ----------
 const raycaster = new THREE.Raycaster();
 raycaster.firstHitOnly = true; // three-mesh-bvh: nearest hit per mesh is enough
@@ -736,11 +811,12 @@ renderer.setAnimationLoop(() => {
   const now = performance.now();
   const dt = Math.min((now - lastT) / 1000, 0.1);
   lastT = now;
+  stepIntro(now);
   stepFlight(now);
   controls.update();
   camera.updateMatrixWorld();
   const camMoved = !lastCam.equals(camera.matrixWorld);
-  if (camMoved || flight || pulseT < 1 || lodMoving || hoverEvent || loadingMsgs) wake();
+  if (camMoved || intro || flight || pulseT < 1 || lodMoving || hoverEvent || loadingMsgs) wake();
   const awake = now <= awakeUntil;
   // A running label pass finishes even after everything else has settled.
   if (!awake && !labels.busy) return;
@@ -762,14 +838,28 @@ controls.minDistance = world.minDist;
 controls.maxDistance = world.maxDist;
 api.home(true);
 
+const params = new URLSearchParams(location.search);
+let onSkeleton = null;
+// Deep links (?select=, ?world=) go straight to the viewer.
+if (params.has('select') || params.has('world')) { introEl.hidden = true; document.getElementById('app').inert = false; }
+else {
+  stage.classList.add('intro-on');
+  const start = document.getElementById('intro-start');
+  start.addEventListener('click', startIntro);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && intro) endIntro(); });
+  onSkeleton = () => { start.disabled = false; start.textContent = 'Start learning'; start.focus(); };
+}
+
 loadBodyManifest().then(async () => {
   ui.ready();
-  await Promise.all(Object.entries(worlds.body.systemOn).filter(([, on]) => on).map(([k]) => ensureSystem(k)));
-  const params = new URLSearchParams(location.search);
+  const all = Promise.all(Object.entries(worlds.body.systemOn).filter(([, on]) => on).map(([k]) => ensureSystem(k)));
+  ensureSystem('skeletal').then(() => onSkeleton?.());
+  await all;
   if (params.get('world') === 'cells') setWorld('cells');
   const q = params.get('select');
   if (q) { const s = api.search(q)[0]; await api.ensureLoaded(s); api.select(s ?? null, { fly: true }); }
 }).catch((err) => {
+  onSkeleton?.(); // let the user past the title to see the error
   showError(`Models failed to load: ${err.message}. Check that public/models exists (see README: rebuilding the models).`);
   console.error(err);
 });
